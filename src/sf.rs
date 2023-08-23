@@ -3,7 +3,7 @@ use crate::ParsingStandardFormError;
 use std::ops::{Add,Sub,Mul,Div,AddAssign,SubAssign,MulAssign,DivAssign};
 use std::cmp::max;
 
-use arkley_traits::Power;
+use arkley_traits::*;
 
 /// Represents a number in standard form.
 ///
@@ -105,6 +105,16 @@ impl std::fmt::Display for StandardForm {
     }
 }
 
+impl std::fmt::Debug for StandardForm {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        if self.exponent > 4 {
+            return write!(f,"{}",self.to_scientific_notation());
+        };
+
+        write!(f,"{}",self.mantissa * 10_i32.pow(self.exponent as u32) as f64)
+    }
+}
+
 impl TryFrom<&str> for StandardForm {
     type Error = ParsingStandardFormError;
 
@@ -126,6 +136,18 @@ impl TryFrom<&str> for StandardForm {
         }
 
         Err(ParsingStandardFormError::InvalidFormat)
+    }
+}
+
+impl Abs for StandardForm {
+    fn absolute(self) -> Self {
+       Self { mantissa : self.mantissa.absolute() , exponent : self.exponent }
+    }
+}
+
+impl Zero for StandardForm {
+    fn zero() -> Self { 
+        Self { mantissa : 0.0 , exponent : 1 }
     }
 }
 
@@ -339,3 +361,198 @@ primitives!(operations => i8, i16, i32, i64, u8, u16, u32, u64,f32,f64);
 primitives!(form => u8,u16,u32,u64,i8,i16,i32,i64,f32,f64);
 primitives!(eq => u8,u16,u32,u64,i8,i16,i32,i64,f32,f64);
 primitives!(ord => u8,u16,u32,u64,i8,i16,i32,i64,f32,f64);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::cmp::Ordering;
+
+    #[test]
+    fn assignment_issue() {
+        let sf1 = StandardForm::new(1.0,5);
+        assert_eq!(*sf1.mantissa(),1.0);
+        assert_eq!(*sf1.exponent(),5);
+    }
+
+    #[test]
+    fn from_u8_standardform(){
+        let n = 2u8;
+        let r : StandardForm = n.into();
+
+        assert_eq!(r,StandardForm { mantissa : 2.0,exponent : 0 });
+    }
+
+    #[test]
+    fn test_normalize_with_valid_range() {
+        let mut sf = StandardForm::new(2.5, 3);
+        sf.adjust();
+        assert_eq!(sf.mantissa, 2.5);
+        assert_eq!(sf.exponent, 3);
+    }
+
+    #[test]
+    fn test_normalize_with_invalid_range() {
+        let mut sf = StandardForm::new(20.0, 3);
+        sf.adjust();
+        assert_eq!(sf.mantissa, 2.0);
+        assert_eq!(sf.exponent, 4);
+    }
+
+    #[test]
+    fn test_normalize_with_small_mantissa() {
+        let mut sf = StandardForm::new(-0.25, 2);
+        sf.adjust();
+        assert_eq!(sf.mantissa, -2.5);
+        assert_eq!(sf.exponent, 1);
+    }
+
+    #[test]
+    fn test_normalize_with_large_negative_mantissa() {
+        let mut sf = StandardForm::new(-750.0, 4);
+        sf.adjust();
+        assert_eq!(sf.mantissa, -7.5);
+        assert_eq!(sf.exponent, 6);
+    }
+
+    #[test]
+    fn addition() {
+        // Test addition between StandardForm instances
+        let a = StandardForm::new(1.2, 3);
+        let b = StandardForm::new(3.4, 2);
+        let result = a + b;
+        assert_eq!(result, StandardForm::new(1.54,3) );
+    }
+
+    #[test]
+    fn addition_u8() {
+        // Test addition with u8
+        let a = StandardForm::new(1.0, 1);
+        let b = 2u8;
+        let result = a + b;
+        assert_eq!(result, StandardForm::new(1.2,1));
+    }
+
+    #[test]
+    fn test_subtraction() {
+        // Test subtraction between StandardForm instances
+        let a = StandardForm::new(4.6, 2);
+        let b = StandardForm::new(3.4, 2);
+        let result = a - b;
+        assert_eq!(result, StandardForm::new(1.2,2));
+    }
+
+    #[test]
+    fn multiplication() {
+        // Test multiplication between StandardForm instances
+        let a = StandardForm::new(1.2, 3);
+        let b = StandardForm::new(3.0, 2);
+        let result = a * b;
+        assert_eq!(result.mantissa, 3.6);
+        assert_eq!(result.exponent, 5);
+    }
+
+    #[test]
+    fn multiplication_u8() {
+        // Test multiplication with u8
+        let a = StandardForm::new(1.0, 1);        
+        let b = 2u8;
+        let result = a * b;
+        assert_eq!(result.mantissa, 2.0);
+        assert_eq!(result.exponent, 1);
+    }
+
+    #[test]
+    fn division() {
+        // Test division between StandardForm instances
+        let a = StandardForm::new(4.0, 2);
+        let b = StandardForm::new(2.0, 1);
+        let result = a / b;
+        assert_eq!(result.mantissa, 2.0);
+        assert_eq!(result.exponent, 1);
+    }
+
+    #[test]
+    fn division_u8() {
+        // Test division with u8
+        let a = StandardForm::new(2.0, 1);
+        let b = 2u8;
+        let result = a / b;
+        assert_eq!(result.mantissa, 1.0);
+        assert_eq!(result.exponent, 1);
+    }
+
+
+    #[test]
+    fn add_assign() {
+        let mut a = StandardForm::new(1.0, 1);
+        let b = StandardForm::new(2.0, 1);
+        a += b;
+        assert_eq!(a.mantissa, 3.0);
+        assert_eq!(a.exponent, 1);
+    }
+
+    #[test]
+    fn add_assign_u8() {
+        // Test AddAssign with u8
+        let mut a = StandardForm::new(1.0, 1);
+
+        let b = 2u8;
+
+        a += b;
+        assert_eq!(a.mantissa, 1.2);
+        assert_eq!(a.exponent, 1);
+    }
+
+    #[test]
+    fn test_partial_cmp_equal() {
+        let sf1 = StandardForm::new(1.23, 3);
+        let sf2 = StandardForm::new(1.23, 3);
+
+        assert_eq!(sf1.partial_cmp(&sf2), Some(Ordering::Equal));
+    }
+
+    #[test]
+    fn test_partial_cmp_greater() {
+
+        //300
+        let sf1 = StandardForm::new(3.0, 2);
+        // 250
+        let sf2 = StandardForm::new(2.5, 2);
+
+        assert_eq!(sf1.partial_cmp(&sf2), Some(Ordering::Greater));
+    }
+
+    #[test]
+    fn test_partial_cmp_less() {
+        let sf1 = StandardForm::new(2.5, 2);
+        let sf2 = StandardForm::new(3.0, 2);
+
+        assert_eq!(sf1.partial_cmp(&sf2), Some(Ordering::Less));
+    }
+
+    #[test]
+    fn test_partial_cmp_different_exponents() {
+        let sf1 = StandardForm::new(1.5, 2);
+        let sf2 = StandardForm::new(1.5, 3);
+
+        // When exponents are different, the comparison is based on the magnitude
+        assert_eq!(sf1.partial_cmp(&sf2), Some(Ordering::Less));
+    }
+
+    #[test]
+    fn test_partial_cmp_zero() {
+        let sf1 = StandardForm::new(0.0, 0);
+        let sf2 = StandardForm::new(0.0, 0);
+
+        assert_eq!(sf1.partial_cmp(&sf2), Some(Ordering::Equal));
+    }
+
+    #[test]
+    fn test_partial_cmp_mixed_sign() {
+        let sf1 = StandardForm::new(-1.0, 2);
+        let sf2 = StandardForm::new(1.0, 2);
+
+        // Negative numbers are considered less than positive numbers with the same magnitude
+        assert_eq!(sf1.partial_cmp(&sf2), Some(Ordering::Less));
+    }
+}
