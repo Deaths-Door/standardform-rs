@@ -16,8 +16,15 @@ Add this library to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-standardform = "0.1.0"
+standardform = "0.1.1" # Version  
 ```
+To enable intergation it with `num_traits` , enable `num` feature:
+
+```toml
+[dependencies]
+standardform = { version = "0.1.1" , features = ["num"] }
+```
+
 
 Then
 

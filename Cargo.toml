@@ -1,6 +1,6 @@
 [package]
 name = "standardform"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 readme = "README.md"
 authors = ["Aarav Shah <aaravaditya51@gmail.com>"]
@@ -15,6 +15,5 @@ num = ["dep:num-traits"]
 
 [dependencies]
 thiserror = "1.0.48"
-
 
 num-traits = { version = "0.2.16" , optional = true }
