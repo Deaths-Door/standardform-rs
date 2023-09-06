@@ -8,6 +8,7 @@ Effortlessly operate on numbers like 2e19 or 2*10^4 and more with this Rust impl
 - Perform arithmetic operations on numbers with different exponents.
 - Easily compare numbers in standard form.
 - Clone and debug derive implementations for `StandardForm` struct.
+- Intergate it with `num_traits` crate as well.
 
 ## Usage
 

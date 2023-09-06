@@ -10,5 +10,11 @@ repository = "https://github.com/Deaths-Door/standardform-rs"
 homepage = "https://github.com/Deaths-Door/standardform-rs"
 license = "MIT OR Apache-2.0"
 
+[features]
+num = ["dep:num-traits"]
+
 [dependencies]
-arkley_traits = "0.0.2"
+thiserror = "1.0.48"
+
+
+num-traits = { version = "0.2.16" , optional = true }

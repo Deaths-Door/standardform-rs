@@ -4,7 +4,6 @@
         missing_docs,
         unsafe_code,
         unused_imports,
-        unused_variables,
         unused_mut,
         unused_results,
         unused_allocation,
@@ -20,3 +19,9 @@ mod error;
 
 pub use self::sf::*;
 pub use self::error::*;
+
+#[cfg(feature = "num")]
+mod num;
+
+#[cfg(feature = "num")]
+pub use self::num::*;

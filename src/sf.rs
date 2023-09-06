@@ -1,18 +1,15 @@
+use std::ops::{Add,Sub,Mul,Div,AddAssign,SubAssign,MulAssign,DivAssign,Neg,Rem};
+
 use crate::ParsingStandardFormError;
-
-use std::ops::{Add,Sub,Mul,Div,AddAssign,SubAssign,MulAssign,DivAssign};
-use std::cmp::max;
-
-use arkley_traits::*;
 
 /// Represents a number in standard form.
 ///
 /// The `Standardform` struct holds the significand (mantissa) of the number 
 /// and an exponent that determines the power of 10 by which the significand should be multiplied.
-#[derive(Clone, PartialEq)]
+#[derive(Clone,PartialEq)]
 pub struct StandardForm  {
     mantissa : f64,
-    exponent : i8
+    exponent : i8 
 }
 
 impl StandardForm {
@@ -22,25 +19,26 @@ impl StandardForm {
     /// It's important to note that the provided `mantissa` and `exponent` may not be exactly the same as the
     /// values stored in the resulting instance. The values are adjusted automatically to adhere to the rules
     /// of standard form representation, ensuring the most appropriate form for the given input.
+    /// 
+    ///  ## Rules :
+    /// If the current mantissa and exponent do not satisfy the standard form representation requirements,
+    /// this method will adjust them while maintaining the value of the number represented. The adjustment
+    /// ensures that the mantissa is between 1 (inclusive) and 10 (exclusive) and the exponent is such that
+    /// the product of mantissa and 10 raised to the exponent yields the original number.
     pub fn new(mantissa : f64,exponent : i8) -> Self {
-        let mut instance = Self { mantissa , exponent};
+        let mut instance = Self::new_unchecked(mantissa,exponent);
         instance.adjust();
         instance
+    }
+
+    pub(crate) fn new_unchecked(mantissa : f64,exponent : i8) -> Self { 
+        Self { mantissa , exponent }
     }
 
     fn in_range(&self) -> bool {
         (self.mantissa >= 1.0 && self.mantissa <= 10.0) || (self.mantissa >= -10.0 && self.mantissa <= -1.0)
     }
 
-    /// Adjusts the mantissa and exponent of the `StandardForm` instance to adhere to standard form representation rules.
-    ///
-    /// If the current mantissa and exponent do not satisfy the standard form representation requirements,
-    /// this method will adjust them while maintaining the value of the number represented. The adjustment
-    /// ensures that the mantissa is between 1 (inclusive) and 10 (exclusive) and the exponent is such that
-    /// the product of mantissa and 10 raised to the exponent yields the original number.
-    ///
-    /// This adjustment is particularly useful when initializing a `StandardForm` instance with arbitrary values,
-    /// as it ensures that the instance accurately represents the provided numerical value in standard form.
     fn adjust(&mut self) {
         if self.in_range() || self.mantissa == 0.0 {
             return;
@@ -58,7 +56,9 @@ impl StandardForm {
             }
         }
     }
+}
 
+impl StandardForm {
     /// Returns a reference to the StandardForm representing the significand (mantissa) of the number.
     pub const fn mantissa(&self) -> &f64 {
         &self.mantissa
@@ -67,8 +67,10 @@ impl StandardForm {
     /// Returns the exponent that determines the power of 10 by which the significand should be multiplied.
     pub const fn exponent(&self) -> &i8 {
         &self.exponent
-    }
+    }    
+}
 
+impl StandardForm {
     /// Returns the string representation of the number in scientific notation.
     pub fn to_scientific_notation(&self) -> String {
         format!("{}e{}", self.mantissa, self.exponent)
@@ -77,7 +79,7 @@ impl StandardForm {
     /// Returns the string representation of the number in engineering notation.
     pub fn to_engineering_notation(&self) -> String {
         format!("{}*10^{}", self.mantissa, self.exponent)
-    }
+    }    
 }
 
 impl Default for StandardForm {
@@ -107,11 +109,7 @@ impl std::fmt::Display for StandardForm {
 
 impl std::fmt::Debug for StandardForm {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        if self.exponent > 4 {
-            return write!(f,"{}",self.to_scientific_notation());
-        };
-
-        write!(f,"{}",self.mantissa * 10_i32.pow(self.exponent as u32) as f64)
+        write!(f,"{}",self.to_string())
     }
 }
 
@@ -124,14 +122,14 @@ impl TryFrom<&str> for StandardForm {
         }
 
         if let Some(index) = value.find('e') {
-            let m_str : f64 = value[0..index].parse().map_err(|error| ParsingStandardFormError::Mantissa(error) )?;
-            let e_str : i8 = value[index + 1..].parse().map_err(|error| ParsingStandardFormError::Exponent(error) )?;
+            let m_str : f64 = value[0..index].parse()?;
+            let e_str : i8 = value[index + 1..].parse()?;
             return Ok(StandardForm::new(m_str,e_str));
         }
         
         if let Some(index) = value.find('^') {
-            let m_str : f64 = value[0..index - 2].parse().map_err(|error| ParsingStandardFormError::Mantissa(error) )?;
-            let e_str : i8 = value[index + 1..].parse().map_err(|error| ParsingStandardFormError::Exponent(error) )?;
+            let m_str : f64 = value[0..index - 2].parse()?;
+            let e_str : i8 = value[index + 1..].parse()?;
             return Ok(StandardForm::new(m_str,e_str));
         }
 
@@ -139,31 +137,42 @@ impl TryFrom<&str> for StandardForm {
     }
 }
 
-impl Abs for StandardForm {
-    fn absolute(self) -> Self {
-       Self { mantissa : self.mantissa.absolute() , exponent : self.exponent }
+impl TryFrom<&[u8]> for StandardForm {
+    type Error = ParsingStandardFormError;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        Self::try_from(std::str::from_utf8(value)?)
     }
 }
 
-impl Zero for StandardForm {
-    fn zero() -> Self { 
-        Self { mantissa : 0.0 , exponent : 1 }
+impl Neg for StandardForm {
+    type Output = Self;
+    fn neg(self) -> Self::Output {
+        Self::new_unchecked(-self.mantissa,self.exponent)
     }
 }
+
+impl Rem for StandardForm {
+    type Output = Self;
+    fn rem(self,other : Self) -> Self::Output {
+        self.clone() - (self / other.clone() * other) 
+    }
+}
+
 
 impl Add for StandardForm {
     type Output = Self;
     fn add(self, other: Self) -> Self {
-        let max_power = max(self.exponent, other.exponent);
-        let num_sum = self.mantissa * 10.0_f64.to_the_power_of((self.exponent - max_power) as f64) + other.mantissa * 10.0_f64.to_the_power_of((other.exponent - max_power) as f64);
+        let max_power = self.exponent.max(other.exponent);
+        let num_sum = self.mantissa * 10.0_f64.powf((self.exponent - max_power) as f64) + other.mantissa * 10.0_f64.powf((other.exponent - max_power) as f64);
         StandardForm::new(num_sum, max_power)
     }
 }
 
 impl AddAssign for StandardForm {
     fn add_assign(&mut self, other: Self) {
-        let max_power = max(self.exponent, other.exponent);
-        let num_sum = self.mantissa * 10.0_f64.to_the_power_of((self.exponent - max_power) as f64) + other.mantissa * 10.0_f64.to_the_power_of((other.exponent - max_power) as f64);
+        let max_power = self.exponent.max(other.exponent);
+        let num_sum = self.mantissa * 10.0_f64.powf((self.exponent - max_power) as f64) + other.mantissa * 10.0_f64.powf((other.exponent - max_power) as f64);
 
         self.mantissa = num_sum;
         self.exponent = max_power;
@@ -361,6 +370,7 @@ primitives!(operations => i8, i16, i32, i64, u8, u16, u32, u64,f32,f64);
 primitives!(form => u8,u16,u32,u64,i8,i16,i32,i64,f32,f64);
 primitives!(eq => u8,u16,u32,u64,i8,i16,i32,i64,f32,f64);
 primitives!(ord => u8,u16,u32,u64,i8,i16,i32,i64,f32,f64);
+
 
 #[cfg(test)]
 mod tests {
