@@ -1,4 +1,4 @@
-use std::ops::{Add,Sub,Mul,Div,AddAssign,SubAssign,MulAssign,DivAssign,Neg,Rem};
+use std::ops::{Add,Sub,Mul,Div,AddAssign,SubAssign,MulAssign,DivAssign,Neg,Rem,RemAssign};
 
 use crate::ParsingStandardFormError;
 
@@ -250,6 +250,13 @@ impl DivAssign for StandardForm {
     }
 }
 
+impl RemAssign for StandardForm {
+    fn rem_assign(&mut self, other: StandardForm) {
+        *self = self.clone() % other;
+    }
+}
+
+
 macro_rules! primitives {
     (form => $($t:ty),*) => {
         $(
@@ -356,12 +363,32 @@ macro_rules! primitives {
             }
         )*
     };
+    (rem => $($t : ty),*) => {
+        $(
+            impl Rem<$t> for StandardForm {
+                type Output = Self;
+                fn rem(self, other: $t) -> Self {
+                    let rhs : Self = other.into();
+                    self % rhs
+                }
+            }
+            
+            impl RemAssign<$t> for StandardForm {
+                fn rem_assign(&mut self, other: $t) {
+                    let rhs : Self = other.into();
+                    *self %= rhs;
+                }
+            }
+        )*
+    };
     (operations => $($t:ty),*) => {
         $(
             primitives!(add => $t);
             primitives!(sub => $t);
             primitives!(mul => $t);
             primitives!(div => $t);
+            primitives!(rem => $t);
+
         )*
     }
 }
