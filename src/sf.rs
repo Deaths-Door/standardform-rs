@@ -31,7 +31,7 @@ impl StandardForm {
         instance
     }
 
-    pub(crate) fn new_unchecked(mantissa : f64,exponent : i8) -> Self { 
+    pub(crate) const fn new_unchecked(mantissa : f64,exponent : i8) -> Self { 
         Self { mantissa , exponent }
     }
 
@@ -103,13 +103,13 @@ impl std::fmt::Display for StandardForm {
             return write!(f,"{}",self.to_scientific_notation());
         };
 
-        write!(f,"{}",self.mantissa * 10_i32.pow(self.exponent as u32) as f64)
+        write!(f,"{}",self.mantissa * 10_f64.powi(self.exponent as i32) as f64)
     }
 }
 
 impl std::fmt::Debug for StandardForm {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f,"{}",self.to_string())
+        write!(f,"{self}")
     }
 }
 
@@ -181,18 +181,23 @@ impl AddAssign for StandardForm {
     }
 }
 
+const TOLERANCE : f64 = 1.0e6;
+
+pub(crate) fn round(result : f64) -> f64 {
+    (result * TOLERANCE).round() / TOLERANCE
+}
+
 impl Sub for StandardForm {
     type Output = Self;
     fn sub(self, other: Self) -> Self {
         let min = self.exponent.min(other.exponent);
 
-        let x = self.mantissa * 10_i32.pow((self.exponent - min) as u32) as f64;
-        let y = other.mantissa * 10_i32.pow((other.exponent - min) as u32) as f64;
+        let x = self.mantissa * 10_f64.powi((self.exponent - min) as i32) as f64;
+        let y = other.mantissa * 10_f64.powi((other.exponent - min) as i32) as f64;
 
         let result = x - y;
-        let rounded = (result * 1.0e6).round() / 1.0e6;
 
-        StandardForm::new(rounded,min)
+        StandardForm::new(round(result),min)
     }
 }
 
@@ -204,9 +209,8 @@ impl SubAssign for StandardForm {
         let y = other.mantissa * 10_i32.pow((other.exponent - min) as u32) as f64;
 
         let result = x - y;
-        let rounded = (result * 1.0e6).round() / 1.0e6;
 
-        self.mantissa = rounded;
+        self.mantissa = round(result);
         self.exponent = min;
         self.adjust(); 
     }
@@ -217,8 +221,7 @@ impl Mul for StandardForm {
     fn mul(self, other: Self) -> Self {
         let exponent = self.exponent + other.exponent;
         let mantissa = self.mantissa * other.mantissa;
-        let rounded = (mantissa * 1.0e6).round() / 1.0e6;
-        StandardForm::new(rounded,exponent)
+        StandardForm::new(round(mantissa),exponent)
     }
 }
 
@@ -226,9 +229,8 @@ impl MulAssign for StandardForm {
     fn mul_assign(&mut self, other: Self) {
         let exponent = self.exponent + other.exponent;
         let mantissa = self.mantissa * other.mantissa;
-        let rounded = (mantissa * 1.0e6).round() / 1.0e6;
 
-        self.mantissa = rounded;
+        self.mantissa = round(mantissa);
         self.exponent = exponent;
 
         self.adjust();
