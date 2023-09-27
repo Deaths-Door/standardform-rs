@@ -1,4 +1,5 @@
 use std::ops::{Add,Sub,Mul,Div,AddAssign,SubAssign,MulAssign,DivAssign,Neg,Rem,RemAssign};
+use std::cmp::Ordering;
 
 use crate::ParsingStandardFormError;
 
@@ -89,11 +90,19 @@ impl Default for StandardForm {
 }
 
 impl PartialOrd for StandardForm {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match self.exponent == other.exponent {
             true => self.mantissa.partial_cmp(&other.mantissa),
             false => self.exponent.partial_cmp(&other.exponent)
         }
+    }
+}
+
+impl Eq for StandardForm {}
+
+impl Ord for StandardForm {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
     }
 }
 
@@ -283,7 +292,7 @@ macro_rules! primitives {
     (ord => $($t:ty),*) => {
         $(
             impl PartialOrd<$t> for StandardForm {
-                fn partial_cmp(&self, other: &$t) -> Option<std::cmp::Ordering> {
+                fn partial_cmp(&self, other: &$t) -> Option<Ordering> {
                     let rhs : Self = (*other).into();
                     self.partial_cmp(&rhs)
                 }
@@ -404,7 +413,7 @@ primitives!(ord => u8,u16,u32,u64,i8,i16,i32,i64,f32,f64);
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::cmp::Ordering;
+    use Ordering;
 
     #[test]
     fn assignment_issue() {

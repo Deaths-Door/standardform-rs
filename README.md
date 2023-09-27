@@ -9,6 +9,7 @@ Effortlessly operate on numbers like 2e19 or 2*10^4 and more with this Rust impl
 - Easily compare numbers in standard form.
 - Clone and debug derive implementations for `StandardForm` struct.
 - Intergate it with `num_traits` crate as well.
+- Standardform form can be hashed as well using `hash` feature.
 
 ## Usage
 
@@ -25,6 +26,12 @@ To enable intergation it with `num_traits` , enable `num` feature:
 standardform = { version = "0.1.1" , features = ["num"] }
 ```
 
+To enable hashing , enable `hash` feature:
+
+```toml
+[dependencies]
+standardform = { version = "0.1.1" , features = ["hash"] }
+```
 
 Then
 
