@@ -122,6 +122,12 @@ impl std::fmt::Debug for StandardForm {
     }
 }
 
+impl From<StandardForm> for f64 {
+    fn from(value: StandardForm) -> Self {
+       value.mantissa * 10_f64.powi(value.exponent as i32)
+    }
+}
+
 impl TryFrom<&str> for StandardForm {
     type Error = ParsingStandardFormError;
 
@@ -266,7 +272,6 @@ impl RemAssign for StandardForm {
         *self = self.clone() % other;
     }
 }
-
 
 macro_rules! primitives {
     (form => $($t:ty),*) => {

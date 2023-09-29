@@ -2,7 +2,9 @@ use num_traits::{
     identities::{One,Zero},
     sign::Signed,
     cast::FromPrimitive,
+    ToPrimitive,
     Num,
+    Pow
 };
 
 use crate::{StandardForm,ParsingStandardFormError};
@@ -76,5 +78,27 @@ impl FromPrimitive for StandardForm {
     }
     fn from_u64(n: u64) -> Option<Self> {
         Some(Self::new(n as f64,0))
+    }
+}
+
+impl ToPrimitive for StandardForm {
+    // Required methods
+    fn to_i64(&self) -> Option<i64> {
+        let x : f64 = self.clone().into();
+        Some(x as i64)
+    }
+    fn to_u64(&self) -> Option<u64> {
+        let x : f64 = self.clone().into();
+        Some(x as u64)
+    }
+}
+
+impl Pow<Self> for StandardForm {
+    type Output = f64;
+
+    fn pow(self, other: Self) -> Self::Output {
+        let x : f64 = self.into();
+        let y : f64 = other.into();
+        x.powf(y)
     }
 }
