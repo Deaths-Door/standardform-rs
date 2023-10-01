@@ -10,6 +10,7 @@ Effortlessly operate on numbers like 2e19 or 2*10^4 and more with this Rust impl
 - Clone and debug derive implementations for `StandardForm` struct.
 - Intergate it with `num_traits` crate as well.
 - Standardform form can be hashed as well using `hash` feature.
+- Intergate with nom using `nom` feature
 
 ## Usage
 
@@ -31,6 +32,13 @@ To enable hashing , enable `hash` feature:
 ```toml
 [dependencies]
 standardform = { version = "0.1.1" , features = ["hash"] }
+```
+```
+To enable intergation it with `nom` , enable `nom` feature:
+
+```toml
+[dependencies]
+standardform = { version = "0.1.1" , features = ["nom"] }
 ```
 
 Then

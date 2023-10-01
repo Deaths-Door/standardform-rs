@@ -26,6 +26,7 @@ impl StandardForm {
     /// this method will adjust them while maintaining the value of the number represented. The adjustment
     /// ensures that the mantissa is between 1 (inclusive) and 10 (exclusive) and the exponent is such that
     /// the product of mantissa and 10 raised to the exponent yields the original number.
+    #[must_use]
     pub fn new(mantissa : f64,exponent : i8) -> Self {
         let mut instance = Self::new_unchecked(mantissa,exponent);
         instance.adjust();
@@ -61,11 +62,13 @@ impl StandardForm {
 
 impl StandardForm {
     /// Returns a reference to the StandardForm representing the significand (mantissa) of the number.
+    #[must_use]
     pub const fn mantissa(&self) -> &f64 {
         &self.mantissa
     }
 
     /// Returns the exponent that determines the power of 10 by which the significand should be multiplied.
+    #[must_use]
     pub const fn exponent(&self) -> &i8 {
         &self.exponent
     }    
@@ -73,17 +76,20 @@ impl StandardForm {
 
 impl StandardForm {
     /// Returns the string representation of the number in scientific notation.
+    #[must_use]
     pub fn to_scientific_notation(&self) -> String {
         format!("{}e{}", self.mantissa, self.exponent)
     }
         
     /// Returns the string representation of the number in engineering notation.
+    #[must_use]
     pub fn to_engineering_notation(&self) -> String {
         format!("{}*10^{}", self.mantissa, self.exponent)
     }    
 }
 
 impl Default for StandardForm {
+    #[must_use]
     fn default() -> Self {
         Self { mantissa : 1.0, exponent : 0 }
     }
@@ -123,6 +129,7 @@ impl std::fmt::Debug for StandardForm {
 }
 
 impl From<StandardForm> for f64 {
+    #[must_use]
     fn from(value: StandardForm) -> Self {
        value.mantissa * 10_f64.powi(value.exponent as i32)
     }
@@ -131,6 +138,7 @@ impl From<StandardForm> for f64 {
 impl TryFrom<&str> for StandardForm {
     type Error = ParsingStandardFormError;
 
+    #[must_use]
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         if let Ok(number) = value.parse::<f64>() {
             return Ok(number.into());
@@ -162,6 +170,7 @@ impl TryFrom<&[u8]> for StandardForm {
 
 impl Neg for StandardForm {
     type Output = Self;
+    #[must_use]
     fn neg(self) -> Self::Output {
         Self::new_unchecked(-self.mantissa,self.exponent)
     }
@@ -169,6 +178,7 @@ impl Neg for StandardForm {
 
 impl Rem for StandardForm {
     type Output = Self;
+    #[must_use]
     fn rem(self,other : Self) -> Self::Output {
         self.clone() - (self / other.clone() * other) 
     }
@@ -177,6 +187,7 @@ impl Rem for StandardForm {
 
 impl Add for StandardForm {
     type Output = Self;
+    #[must_use]
     fn add(self, other: Self) -> Self {
         let max_power = self.exponent.max(other.exponent);
         let num_sum = self.mantissa * 10.0_f64.powf((self.exponent - max_power) as f64) + other.mantissa * 10.0_f64.powf((other.exponent - max_power) as f64);
@@ -204,6 +215,7 @@ pub(crate) fn round(result : f64) -> f64 {
 
 impl Sub for StandardForm {
     type Output = Self;
+    #[must_use]
     fn sub(self, other: Self) -> Self {
         let min = self.exponent.min(other.exponent);
 
@@ -233,6 +245,7 @@ impl SubAssign for StandardForm {
 
 impl Mul for StandardForm {
     type Output = Self;
+    #[must_use]
     fn mul(self, other: Self) -> Self {
         let exponent = self.exponent + other.exponent;
         let mantissa = self.mantissa * other.mantissa;
@@ -254,6 +267,7 @@ impl MulAssign for StandardForm {
 
 impl Div for StandardForm {
     type Output = Self;
+    #[must_use]
     fn div(self, other: Self) -> Self {
         StandardForm::new(self.mantissa / other.mantissa,self.exponent - other.exponent)
     }
@@ -277,6 +291,7 @@ macro_rules! primitives {
     (form => $($t:ty),*) => {
         $(
             impl From<$t> for StandardForm {
+                #[must_use]
                 fn from(value: $t) -> Self {
                     StandardForm::new(value as f64,0)
                 }
@@ -310,6 +325,7 @@ macro_rules! primitives {
         $(
             impl Add<$t> for StandardForm {
                 type Output = Self;
+                #[must_use]
                 fn add(self, other: $t) -> Self {
                     let rhs : Self = other.into();
                     self + rhs
@@ -329,6 +345,7 @@ macro_rules! primitives {
         $(
             impl Sub<$t> for StandardForm {
                 type Output = Self;
+                #[must_use]
                 fn sub(self, other: $t) -> Self {
                     let rhs : Self = other.into();
                     self - rhs
@@ -347,6 +364,7 @@ macro_rules! primitives {
         $(
             impl Mul<$t> for StandardForm {
                 type Output = Self;
+                #[must_use]
                 fn mul(self, other: $t) -> Self {
                     let rhs : Self = other.into();
                     self * rhs
@@ -365,6 +383,7 @@ macro_rules! primitives {
         $(
             impl Div<$t> for StandardForm {
                 type Output = Self;
+                #[must_use]
                 fn div(self, other: $t) -> Self {
                     let rhs : Self = other.into();
                     self / rhs
@@ -383,6 +402,7 @@ macro_rules! primitives {
         $(
             impl Rem<$t> for StandardForm {
                 type Output = Self;
+                #[must_use]
                 fn rem(self, other: $t) -> Self {
                     let rhs : Self = other.into();
                     self % rhs
