@@ -21,7 +21,7 @@ use crate::StandardForm;
 ///
 /// Returns a `Result` containing the parsed `StandardForm` struct if successful, or a parsing error.
 #[must_use = "Whats the point of using this then"]
-fn parse_standard_form(input: &str) -> IResult<&str, StandardForm> {
+pub fn parse_standard_form(input: &str) -> IResult<&str, StandardForm> {
     map(
         pair(double,parse_exponent),
         |(mantissa , exponent)| StandardForm::new(mantissa,exponent.unwrap_or(0)) 
