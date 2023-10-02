@@ -21,19 +21,44 @@ use crate::StandardForm;
 ///
 /// Returns a `Result` containing the parsed `StandardForm` struct if successful, or a parsing error.
 #[must_use = "Whats the point of using this then"]
-pub fn parse_standard_form(input: &str) -> IResult<&str, StandardForm> {
+pub fn parse_standard_form_with_optional_exponent(input: &str) -> IResult<&str, StandardForm> {
+    let parse_exponent = preceded(
+        alt((tag("e"), tag("E"), tag("*10^"))),
+        map(double, |exp: f64| exp as i8)
+    );
+    
+    map(
+        pair(double,parse_exponent),
+        |(mantissa , exponent)| StandardForm::new(mantissa,exponent) 
+    )(input)
+}
+
+/// Parses a string in standard form (scientific notation) and returns a `StandardForm` struct.
+///
+/// The standard form number can be written as "mantissaEexponent", or "mantissa*10^exponent". It supports both positive and negative exponents.
+///
+/// # Arguments
+///
+/// * `input` - The input string to parse.
+///
+/// # Returns
+///
+/// Returns a `Result` containing the parsed `StandardForm` struct if successful, or a parsing error.
+#[must_use = "Whats the point of using this then"]
+pub fn parse_standard_form_without_exponent(input: &str) -> IResult<&str, StandardForm> {
+    let parse_exponent = opt(preceded(
+        alt((tag("e"), tag("E"), tag("*10^"))),
+        map(double, |exp: f64| exp as i8)
+    ));
     map(
         pair(double,parse_exponent),
         |(mantissa , exponent)| StandardForm::new(mantissa,exponent.unwrap_or(0)) 
     )(input)
 }
-
-fn parse_exponent(input : &str) -> IResult<&str,Option<i8>> {
-    opt(preceded(
+/* opt(preceded(
         alt((tag("e"), tag("E"), tag("*10^"))),
         map(double, |exp: f64| exp as i8)
-    ))(input)
-}
+    ))(input) */
 
 #[cfg(test)]
 mod parse_exponent_tests {
