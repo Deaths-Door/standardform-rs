@@ -21,7 +21,7 @@ use crate::StandardForm;
 ///
 /// Returns a `Result` containing the parsed `StandardForm` struct if successful, or a parsing error.
 #[must_use = "Whats the point of using this then"]
-pub fn parse_standard_form_with_optional_exponent(input: &str) -> IResult<&str, StandardForm> {
+pub fn parse_standard_form_with_required_exponent(input: &str) -> IResult<&str, StandardForm> {
     let parse_exponent = preceded(
         alt((tag("e"), tag("E"), tag("*10^"))),
         map(double, |exp: f64| exp as i8)
@@ -45,7 +45,7 @@ pub fn parse_standard_form_with_optional_exponent(input: &str) -> IResult<&str, 
 ///
 /// Returns a `Result` containing the parsed `StandardForm` struct if successful, or a parsing error.
 #[must_use = "Whats the point of using this then"]
-pub fn parse_standard_form_without_exponent(input: &str) -> IResult<&str, StandardForm> {
+pub fn parse_standard_form_with_optional_exponent(input: &str) -> IResult<&str, StandardForm> {
     let parse_exponent = opt(preceded(
         alt((tag("e"), tag("E"), tag("*10^"))),
         map(double, |exp: f64| exp as i8)
