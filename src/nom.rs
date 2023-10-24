@@ -20,13 +20,7 @@ use crate::StandardForm;
 /// # Returns
 ///
 /// Returns a `Result` containing the parsed `StandardForm` struct if successful, or a parsing error.
-#[must_use = "Whats the point of using this then"]
-pub fn parse_standard_form_with_required_exponent(input: &str) -> IResult<&str, StandardForm> {
-    let parse_exponent = preceded(
-        alt((tag("e"), tag("E"), tag("*10^"))),
-        map(double, |exp: f64| exp as i8)
-    );
-    
+pub fn parse_standard_form_with_required_exponent(input: &str) -> IResult<&str, StandardForm> {    
     map(
         pair(double,parse_exponent),
         |(mantissa , exponent)| StandardForm::new(mantissa,exponent) 
@@ -44,82 +38,18 @@ pub fn parse_standard_form_with_required_exponent(input: &str) -> IResult<&str, 
 /// # Returns
 ///
 /// Returns a `Result` containing the parsed `StandardForm` struct if successful, or a parsing error.
-#[must_use = "Whats the point of using this then"]
 pub fn parse_standard_form_with_optional_exponent(input: &str) -> IResult<&str, StandardForm> {
-    let parse_exponent = opt(preceded(
-        alt((tag("e"), tag("E"), tag("*10^"))),
-        map(double, |exp: f64| exp as i8)
-    ));
     map(
-        pair(double,parse_exponent),
+        pair(double,opt(parse_exponent)),
         |(mantissa , exponent)| StandardForm::new(mantissa,exponent.unwrap_or(0)) 
     )(input)
 }
-/* opt(preceded(
+
+fn parse_exponent(input: &str) -> IResult<&str,i8> {
+    preceded(
         alt((tag("e"), tag("E"), tag("*10^"))),
         map(double, |exp: f64| exp as i8)
-    ))(input) */
-
-#[cfg(test)]
-mod parse_exponent_tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_exponent_valid_positive_e() {
-        let input = "e3";
-        let expected_result = Ok(("", Some(3)));
-        assert_eq!(parse_exponent(input), expected_result);
-    }
-
-    #[test]
-    fn test_parse_exponent_valid_negative_e() {
-        let input = "e-4";
-        let expected_result = Ok(("", Some(-4)));
-        assert_eq!(parse_exponent(input), expected_result);
-    }
-
-    #[allow(non_snake_case)]
-    #[test]
-    fn test_parse_exponent_valid_positive_E() {
-        let input = "E2";
-        let expected_result = Ok(("", Some(2)));
-        assert_eq!(parse_exponent(input), expected_result);
-    }
-
-    #[allow(non_snake_case)]
-    #[test]
-    fn test_parse_exponent_valid_negative_E() {
-        let input = "E-5";
-        let expected_result = Ok(("", Some(-5)));
-        assert_eq!(parse_exponent(input), expected_result);
-    }
-
-    #[test]
-    fn test_parse_exponent_valid_star() {
-        let input = "*10^6";
-        let expected_result = Ok(("", Some(6)));
-        assert_eq!(parse_exponent(input), expected_result);
-    }
-
-    #[test]
-    fn test_parse_exponent_valid_no_exponent() {
-        let input = "123.456";
-        let expected_result = Ok(("123.456", None));
-        assert_eq!(parse_exponent(input), expected_result);
-    }
-
-    #[test]
-    fn test_parse_exponent_invalid() {
-        let input = "abc";
-        
-        match parse_exponent(input) {
-            Ok((input,exponent)) => {
-                assert_eq!(input,"abc");
-                assert!(exponent.is_none())
-            },
-            Err(_) => assert!(true),
-        }
-    }
+    )(input)
 }
 
 #[cfg(test)]

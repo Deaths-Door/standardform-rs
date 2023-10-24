@@ -11,9 +11,11 @@ homepage = "https://github.com/Deaths-Door/standardform-rs"
 license = "MIT OR Apache-2.0"
 
 [features]
+default = ["std","num","hash","nom"]
 num = ["dep:num-traits"]
 hash = ["dep:ordered-float"]
 nom = ["dep:nom"]
+std = []
 
 [dependencies]
 thiserror = "1.0.48"

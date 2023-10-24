@@ -1,7 +1,5 @@
-use std::ops::{Add,Sub,Mul,Div,AddAssign,SubAssign,MulAssign,DivAssign,Neg,Rem,RemAssign};
-use std::cmp::Ordering;
-
-use crate::ParsingStandardFormError;
+use core::ops::{Add,Sub,Mul,Div,AddAssign,SubAssign,MulAssign,DivAssign,Neg,Rem,RemAssign};
+use core::cmp::Ordering;
 
 /// Represents a number in standard form.
 ///
@@ -112,8 +110,8 @@ impl Ord for StandardForm {
     }
 }
 
-impl std::fmt::Display for StandardForm {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl core::fmt::Display for StandardForm {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         if self.exponent > 4 {
             return write!(f,"{}",self.to_scientific_notation());
         };
@@ -122,8 +120,8 @@ impl std::fmt::Display for StandardForm {
     }
 }
 
-impl std::fmt::Debug for StandardForm {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl core::fmt::Debug for StandardForm {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         write!(f,"{self}")
     }
 }
@@ -135,8 +133,10 @@ impl From<StandardForm> for f64 {
     }
 }
 
+
+#[cfg(feature="std")]
 impl TryFrom<&str> for StandardForm {
-    type Error = ParsingStandardFormError;
+    type Error = crate::ParsingStandardFormError;
 
     #[must_use]
     fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -156,12 +156,13 @@ impl TryFrom<&str> for StandardForm {
             return Ok(StandardForm::new(m_str,e_str));
         }
 
-        Err(ParsingStandardFormError::InvalidFormat)
+        Err(crate::ParsingStandardFormError::InvalidFormat)
     }
 }
 
+#[cfg(feature="std")]
 impl TryFrom<&[u8]> for StandardForm {
-    type Error = ParsingStandardFormError;
+    type Error = crate::ParsingStandardFormError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         Self::try_from(std::str::from_utf8(value)?)

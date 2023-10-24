@@ -14,10 +14,18 @@
         overflowing_literals,
 )]
 
+#![cfg_attr(
+        not(feature = "std"), 
+        no_std
+)]
+
 mod sf;
+pub use self::sf::*;
+
+#[cfg(feature = "std")]
 mod error;
 
-pub use self::sf::*;
+#[cfg(feature = "std")]
 pub use self::error::*;
 
 #[cfg(feature = "num")]

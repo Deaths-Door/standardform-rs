@@ -1,13 +1,11 @@
 use num_traits::{
     identities::{One,Zero},
-    sign::Signed,
     cast::FromPrimitive,
     ToPrimitive,
-    Num,
     Pow
 };
 
-use crate::{StandardForm,ParsingStandardFormError};
+use crate::StandardForm;
 
 /// Represents a standard form number with zero mantissa and zero exponent.
 pub static ZERO: StandardForm = StandardForm::new_unchecked(0.0, 0);
@@ -34,19 +32,21 @@ impl One for StandardForm {
     }
 }
 
-impl Num for StandardForm {
-    type FromStrRadixErr = ParsingStandardFormError;
+#[cfg(feature = "std")]
+impl num_traits::Num for StandardForm {
+    type FromStrRadixErr = crate::ParsingStandardFormError;
     #[inline]
     #[must_use]
     fn from_str_radix(s: &str, radix: u32)-> Result<Self,Self::FromStrRadixErr> {
         match radix != 10 {
-            true => Err(ParsingStandardFormError::InvalidRadix),
+            true => Err(crate::ParsingStandardFormError::InvalidRadix),
             false => Self::try_from(s)
         }
     }
 }
 
-impl Signed for StandardForm {
+#[cfg(feature = "std")]
+impl num_traits::Signed for StandardForm {
     #[must_use]
     fn abs(&self) -> Self {
         Self::new_unchecked(self.mantissa().abs(),*self.exponent())
