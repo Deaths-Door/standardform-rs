@@ -133,7 +133,6 @@ impl From<StandardForm> for f64 {
     }
 }
 
-
 #[cfg(feature="std")]
 impl TryFrom<&str> for StandardForm {
     type Error = crate::ParsingStandardFormError;
@@ -184,7 +183,6 @@ impl Rem for StandardForm {
         self.clone() - (self / other.clone() * other) 
     }
 }
-
 
 impl Add for StandardForm {
     type Output = Self;
@@ -434,6 +432,49 @@ primitives!(operations => i8, i16, i32, i64, u8, u16, u32, u64,f32,f64);
 primitives!(form => u8,u16,u32,u64,i8,i16,i32,i64,f32,f64);
 primitives!(eq => u8,u16,u32,u64,i8,i16,i32,i64,f32,f64);
 primitives!(ord => u8,u16,u32,u64,i8,i16,i32,i64,f32,f64);
+
+macro_rules! trig_functions {
+    ($( {
+        $(#[$attr:meta])* $fn : ident
+    })*) => {
+        impl StandardForm {
+            $(
+                $(#[$attr])*
+                pub fn $fn <T : From<f64>>(self) -> T  {
+                    f64::from(self). $fn ().into()
+                }
+            )*
+
+        }
+    };
+}
+
+trig_functions!(
+    { /// Computes the sine of a number (in radians).
+      sin }
+    { /// Computes the cosine of a number (in radians).
+      cos }
+    { /// Computes the tangent of a number (in radians).
+     tan }
+    { /// Computes the arcsine of a number.
+      asin }
+    { /// Computes the arccosine of a number.
+      acos }
+    { /// Computes the arctangent of a number.
+      atan }
+    { /// Computes the hyperbolic sine.
+      sinh }
+    { /// Computes the hyperbolic cosine.
+     cosh }
+    { /// Computes the hyperbolic tangent.
+      tanh }
+    { /// Computes the inverse hyperbolic sine.
+      asinh }
+    { /// Computes the inverse hyperbolic cosine.
+      acosh }
+    { /// Computes the inverse hyperbolic tangent.
+      atanh }
+);
 
 
 #[cfg(test)]
