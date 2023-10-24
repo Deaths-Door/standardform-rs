@@ -22,6 +22,7 @@
 mod sf;
 pub use self::sf::*;
 
+// needed for thiserror::Error macro
 #[cfg(feature = "std")]
 mod error;
 

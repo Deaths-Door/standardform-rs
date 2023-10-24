@@ -1,6 +1,6 @@
 [package]
 name = "standardform"
-version = "0.1.8"
+version = "0.1.9"
 edition = "2021"
 readme = "README.md"
 authors = ["Aarav Shah <aaravaditya51@gmail.com>"]
@@ -11,7 +11,7 @@ homepage = "https://github.com/Deaths-Door/standardform-rs"
 license = "MIT OR Apache-2.0"
 
 [features]
-default = ["std","num","hash","nom"]
+default = ["std"]
 num = ["dep:num-traits"]
 hash = ["dep:ordered-float"]
 nom = ["dep:nom"]
