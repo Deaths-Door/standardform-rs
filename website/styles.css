@@ -88,3 +88,41 @@ footer a {
 footer a:hover {
     border-bottom: 1px solid #fff;
 }
+
+/* History */
+
+#history {
+    list-style-type: none;
+    padding: 0;
+    margin-top: 28;
+    background: linear-gradient(to bottom, #fff, #f4f4f4);
+    border: 1px solid #000000;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#history li {
+    padding: 16px;
+    border-bottom: 1px solid #723a3a;
+    border-radius: 8px;
+    align-items: center;
+    transition: background-color 0.3s, transform 0.2s;
+    width: 90.5%;
+    margin-left: 4px;
+}
+
+#history li:hover {
+    background-color: #e6f7ff;
+    transform: scale(1.02);
+}
+
+#history li span {
+    flex-grow: 1;
+    font-weight: bold;
+    color: #333;
+}
+
+#history li .separator {
+    font-size: 18px;
+    color: #aaa;
+}
