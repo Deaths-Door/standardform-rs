@@ -1,16 +1,21 @@
 use core::ops::{Add,Sub,Mul,Div,AddAssign,SubAssign,MulAssign,DivAssign,Neg,Rem,RemAssign};
 use core::cmp::Ordering;
 
+#[cfg(feature="js")]
+use wasm_bindgen::prelude::*;
+
 /// Represents a number in standard form.
 ///
 /// The `Standardform` struct holds the significand (mantissa) of the number 
 /// and an exponent that determines the power of 10 by which the significand should be multiplied.
 #[derive(Clone,PartialEq)]
+#[cfg_attr(feature="js", wasm_bindgen)]
 pub struct StandardForm  {
     mantissa : f64,
     exponent : i8 
 }
 
+#[cfg_attr(feature="js", wasm_bindgen)]
 impl StandardForm {
     /// Creates a new instance of `StandardForm` with the given mantissa and exponent.
     ///
@@ -25,10 +30,24 @@ impl StandardForm {
     /// ensures that the mantissa is between 1 (inclusive) and 10 (exclusive) and the exponent is such that
     /// the product of mantissa and 10 raised to the exponent yields the original number.
     #[must_use]
+    #[wasm_bindgen(constructor)]
     pub fn new(mantissa : f64,exponent : i8) -> Self {
         let mut instance = Self::new_unchecked(mantissa,exponent);
         instance.adjust();
         instance
+    }
+
+    #[cfg_attr(all(feature="js",feature="std"), wasm_bindgen)]
+    /// Converts string into `StandardFrom` as traits cannot be 'bridged' 
+    pub fn new_from_string(string : &str) -> Result<StandardForm,JsValue> {
+        Self::try_from(string).map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+
+    #[cfg_attr(feature="js", wasm_bindgen)]
+    /// Converts `StandardFrom` into f64 as traits cannot be 'bridged' 
+    pub fn into_f64(self) -> f64 {
+        self.into()
     }
 
     pub(crate) const fn new_unchecked(mantissa : f64,exponent : i8) -> Self { 
@@ -60,27 +79,46 @@ impl StandardForm {
 
 impl StandardForm {
     /// Returns a reference to the StandardForm representing the significand (mantissa) of the number.
+    #[cfg(not(feature="js"))]
     #[must_use]
     pub const fn mantissa(&self) -> &f64 {
         &self.mantissa
     }
 
+    /// Returns a reference to the StandardForm representing the significand (mantissa) of the number.
+    #[must_use]
+    #[cfg(feature="js")]
+    pub fn mantissa(&self) -> &f64 {
+        &self.mantissa
+    }
+    
     /// Returns the exponent that determines the power of 10 by which the significand should be multiplied.
+    #[cfg(not(feature="js"))]
     #[must_use]
     pub const fn exponent(&self) -> &i8 {
         &self.exponent
-    }    
+    }  
+
+    /// Returns the exponent that determines the power of 10 by which the significand should be multiplied.
+    #[must_use]
+    #[cfg(feature="js")]
+    pub const fn exponent(&self) -> &i8 {
+        &self.exponent
+    }      
 }
 
+#[cfg_attr(feature="js", wasm_bindgen)]
 impl StandardForm {
     /// Returns the string representation of the number in scientific notation.
     #[must_use]
+    #[cfg_attr(feature="js", wasm_bindgen)]
     pub fn to_scientific_notation(&self) -> String {
         format!("{}e{}", self.mantissa, self.exponent)
     }
         
     /// Returns the string representation of the number in engineering notation.
     #[must_use]
+    #[cfg_attr(feature="js", wasm_bindgen)]
     pub fn to_engineering_notation(&self) -> String {
         format!("{}*10^{}", self.mantissa, self.exponent)
     }    
@@ -150,7 +188,7 @@ impl TryFrom<&str> for StandardForm {
         }
         
         if let Some(index) = value.find('^') {
-            let m_str : f64 = value[0..index - 2].parse()?;
+            let m_str : f64 = value[0..index - 3].parse()?;
             let e_str : i8 = value[index + 1..].parse()?;
             return Ok(StandardForm::new(m_str,e_str));
         }
@@ -416,6 +454,19 @@ macro_rules! primitives {
             }
         )*
     };
+    (pow => $($t : ty),*) => {
+        $(
+            #[cfg(feature="num")]
+            impl num_traits::Pow<$t> for StandardForm {
+                type Output = f64;
+            
+                #[must_use]
+                fn pow(self, other: $t) -> Self::Output {
+                    f64::from(self).powf(other as f64)
+                }
+            }
+        )*
+    };
     (operations => $($t:ty),*) => {
         $(
             primitives!(add => $t);
@@ -423,7 +474,7 @@ macro_rules! primitives {
             primitives!(mul => $t);
             primitives!(div => $t);
             primitives!(rem => $t);
-
+            primitives!(pow => $t);
         )*
     }
 }
@@ -437,10 +488,18 @@ macro_rules! trig_functions {
     ($( {
         $(#[$attr:meta])* $fn : ident
     })*) => {
+        #[cfg_attr(feature="js", wasm_bindgen)]
         impl StandardForm {
             $(
                 $(#[$attr])*
+                #[cfg(not(feature="js"))]
                 pub fn $fn <T : From<f64>>(self) -> T  {
+                    f64::from(self). $fn ().into()
+                }
+
+                $(#[$attr])*
+                #[cfg_attr(feature="js", wasm_bindgen)]
+                pub fn $fn (self) -> Self  {
                     f64::from(self). $fn ().into()
                 }
             )*

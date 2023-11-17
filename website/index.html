@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Standardform Convertor</title>
+        <meta charset="UTF-8" />
+        <script type="module" src="main.js"></script>
+        <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+        <div id="container">
+            <div id="convertor">
+                <h1>Standard Form Converter</h1>
+                <label for="convertor_button"><strong>Enter expression</strong></label>
+                <input type="text" id="convertor_button" placeholder="e.g., 2*10^3">
+                <button>Convert</button>
+        
+                <h2 id="result-title">Result:</h2>
+                <div id="result"></div>
+            </div>  
+            <div id="info" class="scrollable">
+                <h1>Understanding Standard Form</h1>
+    
+                <p><strong>Standard form</strong> is a way of writing a number so it is easier to read. It is often used for very large or very small numbers. Standard form is like scientific notation and is typically used in science and engineering.</p>
+    
+                <p>A number is written in <strong>standard form</strong> when it is represented as a <em>decimal number times a power of 10</em>.</p>
+    
+                <p>As an example, consider the speed of light which travels at <strong>299 792 458 kilometers per second</strong>. Written in standard form, this number is equivalent (rounded) to <strong>3×10<sup>8</sup></strong>.</p>
+    
+                <p>Formally, the <strong>standard form definition</strong> is:</p>
+    
+                <p><strong>a = b × 10<sup>n</sup></strong></p>
+    
+                <p>where:</p>
+    
+                <ul>
+                    <li><strong><em>a</em></strong> represents the number we wish to express in standard form.</li>
+                    <li><strong><em>b</em></strong> is a value between 1 and 10, inclusive of 1 but excluding 10.</li>
+                    <li><strong><em>n</em></strong> is an integer, which may be negative.</li>
+                </ul>
+    
+                <p>The condition that <strong>b</strong> should lie between 1 and 10 implies that numbers like <strong>1.36 × 10<sup>7</sup></strong> or <strong>9.81 × 10<sup>-23</sup></strong> are in standard form. However, <strong>13.1 × 10<sup>12</sup></strong> does not meet this criterion since 13.1 exceeds 10. Nevertheless, we can convert it to standard form by adjusting the position of the decimal point:</p>
+    
+                <p><strong>13.1 × 10<sup>12</sup> = 1.31 × 10<sup>13</sup></strong></p>
+            
+                <p>This adjustment involves shifting the decimal point by one place, equivalent to multiplying by 10<sup>1</sup>. Such shifts are precisely what the exponents in standard form represent.</p>
+            
+                <p>Consider the number <strong>12,345.6789</strong>. If we multiply it by 10, the result is:</p>
+            
+                <p><strong>12,345.6789 × 10<sup>1</sup> = 123,456.789</strong></p>
+            
+                <p>This multiplication moves the decimal point one place to the right. Repeating this process:</p>
+            
+                <p><strong>(12,345.6789 × 10<sup>1</sup>) × 10<sup>1</sup> = 12,345.6789 × 10<sup>2</sup> = 1,234,567.89</strong></p>
+            
+                <p>The point shifts two places to the right, as indicated by the power in the standard form exponent.</p>
+            
+                <p>Conversely, dividing the initial number by 10 (equivalent to multiplying it by 1/10 = 10<sup>-1</sup>) results in:</p>
+            
+                <p><strong>12,345.6789 × 10<sup>-1</sup> = 1,234.56789</strong></p>
+    
+                <p><em>After delving into the theoretical aspects, it's now time to explore some practical examples of standard form. Shall we proceed?</em></p>        
+            
+                <h3>Example 1: Converting 459,608 to Standard Form</h3>
+    
+                <p>To express the number <code>459,608</code> in standard form, we follow these steps:</p>
+            
+                <ol>
+                    <li><strong>Move the Decimal:</strong> Move the decimal point 5 places to the left, resulting in the value <code>4.59608</code>.</li>
+                    <li><strong>Determine the Exponent (<code>b</code>):</strong> Since we moved the decimal to the left, the exponent (<code>b</code>) is positive.</li>
+                    <li><strong>Standard Form Representation:</strong> Therefore, the standard form representation of <code>459,608</code> is <code>4.59608 × 10<sup>5</sup></code>.</li>
+                </ol>
+            
+                <h3>Example 2: Converting 0.000380 to Standard Form</h3>
+            
+                <p>Let's convert the number <code>0.000380</code> to standard form using the following steps:</p>
+            
+                <ol>
+                    <li><strong>Move the Decimal:</strong> Shift the decimal point 4 places to the right, eliminating leading zeros and resulting in the value <code>3.80</code>.</li>
+                    <li><strong>Determine the Exponent (<code>b</code>):</strong> Since we moved the decimal to the right, the exponent (<code>b</code>) is negative.</li>
+                    <li><strong>Standard Form Representation:</strong> The standard form representation of <code>0.000380</code> is <code>3.80 × 10<sup>-4</sup></code>.</li>
+                </ol>
+            
+                <p><em>Note: Trailing zeros to the right of the decimal are retained as they are considered significant figures in the original number.</em></p>
+            
+            </div>
+        </div>
+        <footer>
+            <p>Made with ❤️ by Aarav Shah</p>
+            <p>Check out the <a href="https://github.com/Deaths-Door/standardform-rs">repository</a> on GitHub.</p>
+            <p>License: <a href="https://opensource.org/licenses/MIT">MIT</a> or <a href="https://opensource.org/licenses/Apache-2.0">Apache 2.0</a></p>
+            <p>Visit my <a href="https://github.com/Deaths-Door">GitHub profile</a></p>
+        </footer>
+    </body>
+</html>
