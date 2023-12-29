@@ -4,12 +4,16 @@ use core::cmp::Ordering;
 #[cfg(feature="js")]
 use wasm_bindgen::prelude::*;
 
+#[cfg(feature="bindings")]
+use uniffi::*;
+
 /// Represents a number in standard form.
 ///
 /// The `Standardform` struct holds the significand (mantissa) of the number 
 /// and an exponent that determines the power of 10 by which the significand should be multiplied.
 #[derive(Clone,PartialEq)]
 #[cfg_attr(feature="js", wasm_bindgen)]
+#[cfg_attr(feature="bindings", derive(Object))]
 pub struct StandardForm  {
     mantissa : f64,
     exponent : i8 
@@ -30,14 +34,17 @@ impl StandardForm {
     /// ensures that the mantissa is between 1 (inclusive) and 10 (exclusive) and the exponent is such that
     /// the product of mantissa and 10 raised to the exponent yields the original number.
     #[must_use]
-    #[wasm_bindgen(constructor)]
+    #[cfg_attr(feature="js", wasm_bindgen(constructor))]
+    #[cfg_attr(feature="bindings", constructor)]
     pub fn new(mantissa : f64,exponent : i8) -> Self {
         let mut instance = Self::new_unchecked(mantissa,exponent);
         instance.adjust();
         instance
     }
 
-    #[cfg_attr(all(feature="js",feature="std"), wasm_bindgen)]
+   // #[cfg_attr(all(feature="js",feature="std"), wasm_bindgen)]
+    #[cfg(feature="js")]
+    #[wasm_bindgen]
     /// Converts string into `StandardFrom` as traits cannot be 'bridged' 
     pub fn new_from_string(string : &str) -> Result<StandardForm,JsValue> {
         Self::try_from(string).map_err(|e| JsValue::from_str(&e.to_string()))
@@ -498,6 +505,7 @@ macro_rules! trig_functions {
                 }
 
                 $(#[$attr])*
+                #[cfg(feature="js")]
                 #[cfg_attr(feature="js", wasm_bindgen)]
                 pub fn $fn (self) -> Self  {
                     f64::from(self). $fn ().into()

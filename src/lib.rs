@@ -1,6 +1,8 @@
 #![doc = include_str!("../README.md")]
 
-#![forbid(
+#![cfg_attr(
+    not(feature="bindings"),
+    forbid(
         missing_docs,
         unsafe_code,
         unused_imports,
@@ -12,12 +14,16 @@
         trivial_casts,
         unsafe_op_in_unsafe_fn,
         overflowing_literals,
+    )    
 )]
 
 #![cfg_attr(
         not(feature = "std"), 
         no_std
 )]
+
+#[cfg(feature="bindings")]
+uniffi::setup_scaffolding!();
 
 mod sf;
 pub use self::sf::*;
