@@ -84,6 +84,7 @@ impl StandardForm {
     }
 }
 
+#[cfg_attr(feature="bindings",export)]
 impl StandardForm {
     /// Returns a reference to the StandardForm representing the significand (mantissa) of the number.
     #[cfg(not(feature="js"))]
