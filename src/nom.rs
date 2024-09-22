@@ -48,7 +48,7 @@ E: ParseError<&'a str>,{
     )(input)
 }
 
-fn parse_exponent<'a,E>(input: &'a str) -> IResult<&str,i8>   where
+fn parse_exponent<'a,E>(input: &'a str) -> IResult<&str,i8,E>   where
         E: ParseError<&'a str>, {
     preceded(
         alt((tag("e"), tag("E"), tag("*10^"))),
