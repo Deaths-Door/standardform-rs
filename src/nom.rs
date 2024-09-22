@@ -43,7 +43,7 @@ E: ParseError<&'a str>, {
 pub fn parse_standard_form_with_optional_exponent<'a,E>(input: &'a str) -> IResult<&str, StandardForm>    where
 E: ParseError<&'a str>,{
     map(
-        pair(double,opt(parse_exponent)),
+        pair(double,opt(parse_exponent::<E>)),
         |(mantissa , exponent)| StandardForm::new(mantissa,exponent.unwrap_or(0)) 
     )(input)
 }
