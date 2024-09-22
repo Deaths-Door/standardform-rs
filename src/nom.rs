@@ -40,7 +40,7 @@ E: ParseError<&'a str>, {
 /// # Returns
 ///
 /// Returns a `Result` containing the parsed `StandardForm` struct if successful, or a parsing error.
-pub fn parse_standard_form_with_optional_exponent<'a,E>(input: &'a str) -> IResult<&str, StandardForm>    where
+pub fn parse_standard_form_with_optional_exponent<'a,E>(input: &'a str) -> IResult<&str, StandardForm,E>    where
 E: ParseError<&'a str>,{
     map(
         pair(double,opt(parse_exponent::<E>)),
