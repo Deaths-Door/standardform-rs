@@ -14,13 +14,15 @@ license = "MIT OR Apache-2.0"
 all-features = true
 
 [features]
-default = ["std"]
+default = ["std","nom"]
 std = ["decorum/std"]
+nom = ["dep:nom"]
 
 [dependencies]
 thiserror = "1.0.48"
 num-traits =  "0.2.16"
 decorum = { version = "0.3.1" , default-features = false }
+nom = { version = "7.1.3", optional = true }
 
 [dev-dependencies]
 test-case = "3.3.1"

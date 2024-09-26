@@ -11,22 +11,27 @@
     unsafe_op_in_unsafe_fn,
     trivial_casts,
     overflowing_literals,
-    non_snake_case
-)]
-
-#[forbid(
+    non_snake_case,
     clippy::cargo,
     clippy::perf,
     clippy::complexity,
     clippy::style,
     clippy::suspicious
 )]
+
+#[cfg(feature = "nom")]
+mod nom;
+
+#[cfg(feature = "nom")]
+pub use nom::*;
+
+use core::num::{ParseFloatError, ParseIntError};
+use core::str::Utf8Error;
+use core::{f64, i8};
+
 use decorum::Finite;
 use num_traits::real::Real;
 use num_traits::{One, Zero};
-use std::i8;
-use std::num::{ParseFloatError, ParseIntError};
-use std::str::Utf8Error;
 
 use thiserror::Error;
 
@@ -53,7 +58,6 @@ impl StandardForm {
     /// this method will adjust them while maintaining the value of the number represented. The adjustment
     /// ensures that the mantissa is between 1 (inclusive) and 10 (exclusive) and the exponent is such that
     /// the product of mantissa and 10 raised to the exponent yields the original number.
-    #[must_use]
     pub fn new(mantissa: Finite<f64>, exponent: i8) -> Self {
         let mut instance = Self::new_unchecked(mantissa, exponent);
         instance.adjust();
@@ -65,8 +69,13 @@ impl StandardForm {
     }
 
     fn in_range(&self) -> bool {
-        (self.mantissa >= 1.0 && self.mantissa <= 10.0)
-            || (self.mantissa >= -10.0 && self.mantissa <= -1.0)
+        // https://en.wikipedia.org/wiki/Standard_form
+        // 1 ≤ a < 10 -- Although I include negative numbers as well
+
+        let abs = self.mantissa.abs();
+
+        // 1.0 <= abs is same as abs >= 1.0
+        abs >= 1.0 && abs < 10.0
     }
 
     fn adjust(&mut self) {
@@ -77,7 +86,9 @@ impl StandardForm {
         use num_traits::real::Real;
 
         let log10_mantissa = self.mantissa.abs().log10();
-        let adjustment = log10_mantissa.floor(); // Find the largest power of 10
+
+        // Find the largest power of 10
+        let adjustment = log10_mantissa.floor();
 
         if adjustment != 0.0 {
             self.mantissa /= Finite::from_inner(10f64).powf(adjustment);
@@ -94,6 +105,11 @@ impl StandardForm {
                 self.exponent += 1;
             }
         }
+    }
+
+    /// Returns the 'real' value of the struct
+    pub fn as_finite(self) -> Finite<f64> {
+        self.mantissa * 10f64.powi(self.exponent.into())
     }
 }
 
@@ -154,14 +170,13 @@ impl StandardForm {
 impl TryFrom<&str> for StandardForm {
     type Error = crate::ParsingStandardFormError;
 
-    #[must_use]
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         if let Ok(number) = value.parse::<f64>() {
             let output: Result<Self, ConversionError> = number.try_into();
             return output.map_err(|e| e.into());
         }
 
-        if let Some(index) = value.find('e') {
+        if let Some(index) = value.find('e').or_else(|| value.find('E')) {
             let m_str: Finite<f64> = value[0..index].parse()?;
             let e_str: i8 = value[index + 1..].parse()?;
             return Ok(StandardForm::new(m_str, e_str));
@@ -178,7 +193,7 @@ impl TryFrom<&str> for StandardForm {
 }
 
 /// Represents the possible errors that can occur during parsing of a `StandardForm` number.
-#[derive(Error, Debug, Clone)]
+#[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum ParsingStandardFormError {
     /// Error that occurs while parsing the mantissa as a `ParseFloatError`.
     #[error("Failed parsing mantissa due to {0}")]
@@ -306,22 +321,17 @@ impl core::ops::DivAssign for StandardForm {
     }
 }
 
-impl core::ops::RemAssign for StandardForm {
-    fn rem_assign(&mut self, other: StandardForm) {
-        *self = self.clone() % other;
-    }
-}
-
 impl core::ops::Rem for StandardForm {
     type Output = Self;
 
     fn rem(self, rhs: Self) -> Self::Output {
-        let output = self / rhs;
-        let fract = output.mantissa.fract();
+        StandardForm::from(self.as_finite() % rhs.as_finite())
+    }
+}
 
-        let mantissa = (fract * output.exponent as f64).fract();
-
-        StandardForm::new(mantissa, Zero::zero())
+impl core::ops::RemAssign for StandardForm {
+    fn rem_assign(&mut self, other: StandardForm) {
+        *self = self.clone() % other;
     }
 }
 
@@ -438,8 +448,7 @@ macro_rules! primitives {
     };
 }
 
-primitives!(ints => u8,u16,u32
-    ,u64,i8,i16,i32,i64);
+primitives!(ints => u8,u16,u32,u64,i8,i16,i32,i64);
 primitives!(ops => Finite<f64>);
 
 impl From<Finite<f64>> for StandardForm {
@@ -448,7 +457,7 @@ impl From<Finite<f64>> for StandardForm {
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error, PartialEq, Eq)]
 ///
 pub enum ConversionError {
     ///
@@ -484,6 +493,7 @@ impl TryFrom<f32> for StandardForm {
     }
 }
 
+// TODO - Trig Functions
 /*macro_rules! trig_functions {
     ($( {
         $(#[$attr:meta])* $fn : ident
@@ -645,13 +655,14 @@ impl num_traits::ToPrimitive for StandardForm {
     }
 }
 
+const FIRST_SMALLER_VALUE_THEN_10: f64 = 10.0 - f64::EPSILON;
 impl num_traits::Bounded for StandardForm {
     fn max_value() -> Self {
-        Self::new_unchecked(9.9999999999999999.into(), i8::MAX)
+        Self::new_unchecked(FIRST_SMALLER_VALUE_THEN_10.into(), i8::MAX)
     }
 
     fn min_value() -> Self {
-        Self::new_unchecked((-9.9999999999999999).into(), i8::MIN)
+        Self::new_unchecked((-FIRST_SMALLER_VALUE_THEN_10).into(), i8::MIN)
     }
 }
 
@@ -660,111 +671,154 @@ mod tests {
     use super::*;
     use test_case::test_case;
 
-    // Helper function to assert equality of StandardForm numbers
-    fn assert_standardform_eq(sf: &StandardForm, expected_mantissa: f64, expected_exponent: i8) {
-        assert_eq!(sf.mantissa.into_inner(), expected_mantissa);
-        assert_eq!(sf.exponent, expected_exponent);
+    const FALIURE_MSG: &str = "Failed parsing standardform";
+
+    #[test_case( 1.0, 2, "1.00e+2"; "already_in_scientific_notation")]
+    #[test_case( 0.01, 4, "1.00e+2"; "small_number_adjustment")]
+    #[test_case( 1234.0, 0, "1.234e+3"; "large_number_adjustment")]
+    #[test_case( -5678.9, 2, "-5.6789e+5"; "negative_number_adjustment")]
+    #[test_case( 0.000567, -3, "5.67e-7"; "small_negative_exponent_adjustment")]
+    #[test_case( 98765.432, 3, "9.8765432e+7"; "large_mantissa_adjustment")]
+    #[test_case( 0.99999, -1, "9.9999e-2"; "rounding_edge_case")]
+    #[test_case( 1.5, 10, "1.50e+10"; "zero_adjustment_required")]
+    #[test_case( -0.0001, 2, "-1.00e-2"; "negative_small_number_adjustment")]
+    #[test_case( 999.999, -5, "9.99999e-3"; "high_precision_adjustment")]
+    fn correct_adjustment(mantissa: f64, exponent: i8, expected_in_science_notation: &str) {
+        assert_eq!(
+            StandardForm::new(Finite::from_inner(mantissa), exponent).to_scientific_notation(),
+            StandardForm::try_from(expected_in_science_notation)
+                .expect(FALIURE_MSG)
+                .to_scientific_notation()
+        )
     }
 
-    // Test cases for StandardForm::new
-    #[test_case(1.0, 3, 1.0, 3; "normal case")]
-    #[test_case(0.5, -5, 5.0, -6; "small mantissa, negative exponent")]
-    #[test_case(9.999999999999999, 100, 9.999999999999999, 100; "large mantissa, positive exponent")]
-    #[test_case(-2.5, 0, -2.5, 0; "negative mantissa, zero exponent")]
-    fn test_standardform_new(
-        mantissa: f64,
-        exponent: i8,
-        expected_mantissa: f64,
-        expected_exponent: i8,
-    ) {
-        let sf = StandardForm::new(mantissa.into(), exponent);
-        assert_standardform_eq(&sf, expected_mantissa, expected_exponent);
+    #[test_case("1.0e2", "1.00e+2"; "parse_correct_scientific_notation")]
+    #[test_case("12345.678", "1.2345678e+4"; "parse_large_number")]
+    #[test_case("0.000567", "5.67e-4"; "parse_small_number")]
+    #[test_case("1.2345e3", "1.2345e+3"; "parse_exponent_included")]
+    #[test_case("-5678.9", "-5.6789e+3"; "parse_negative_number")]
+    #[test_case("0.00000123", "1.23e-6"; "parse_tiny_number")]
+    #[test_case("9999999.0", "9.999999e6"; "parse_large_integer")]
+    #[test_case("-0.005", "-5.00e-3"; "parse_negative_small_number")]
+    #[test_case("98765e1", "9.8765e+5"; "parse_large_scientific")]
+    #[test_case("0.0012345678", "1.2345678e-3"; "parse_high_precision")]
+    fn parsing_standardform(input: &str, expected_in_science_notation: &str) {
+        assert_eq!(
+            StandardForm::try_from(input).map(|v| v.to_scientific_notation()),
+            Ok(StandardForm::try_from(expected_in_science_notation)
+                .expect(FALIURE_MSG)
+                .to_scientific_notation())
+        )
     }
 
-    // Test cases for addition
-    #[test_case(1.0, 2, 2.0, 2, 3.0, 2; "simple addition with same exponent")]
-    #[test_case(1.0, 1, 1.0, 1, 2.0, 1; "simple addition with exponent 1")]
-    #[test_case(1.0, 2, 1.0, 1, 1.1, 2; "adding values with different exponents")]
-    fn test_standardform_add(
-        m1: f64,
-        e1: i8,
-        m2: f64,
-        e2: i8,
-        expected_mantissa: f64,
-        expected_exponent: i8,
-    ) {
-        let sf1 = StandardForm::new(m1.into(), e1);
-        let sf2 = StandardForm::new(m2.into(), e2);
-        let result = sf1 + sf2;
-        assert_standardform_eq(&result, expected_mantissa, expected_exponent);
+    #[test_case("1.0e2", "2.0e2", "3.00e+2"; "addition_simple")]
+    #[test_case("1.5e3", "2.5e3", "4.00e+3"; "addition_large_numbers")]
+    #[test_case("1.0e-2", "2.0e-2", "3.00e-2"; "addition_small_numbers")]
+    #[test_case("-1.0e3", "2.0e3", "1.00e+3"; "addition_with_negative")]
+    #[test_case("3.5e4", "4.5e4", "8.00e+4"; "addition_similar_exponent")]
+    #[test_case("5.0e1", "5.0e2", "5.50e+2"; "addition_different_exponent")]
+    #[test_case("1.23e2", "-2.46e2", "-1.23e+2"; "addition_negative_result")]
+    #[test_case("1.0e6", "1.0e6", "2.00e+6"; "addition_large_equal_numbers")]
+    #[test_case("5.0e-5", "5.0e-5", "1.00e-4"; "addition_small_equal_numbers")]
+    #[test_case("9.9e1", "1.1e1", "1.10e+2"; "addition_with_carry")]
+    fn add_standardform(lhs: &str, rhs: &str, expected_in_science_notation: &str) {
+        let lhs = StandardForm::try_from(lhs).expect(FALIURE_MSG);
+        let rhs = StandardForm::try_from(rhs).expect(FALIURE_MSG);
+
+        assert_eq!(
+            (lhs + rhs).to_scientific_notation(),
+            StandardForm::try_from(expected_in_science_notation)
+                .expect(FALIURE_MSG)
+                .to_scientific_notation()
+        )
     }
 
-    // Test cases for subtraction
-    #[test_case(3.0, 2, 1.0, 2, 2.0, 2; "simple subtraction with same exponent")]
-    #[test_case(1.0, 1, 0.5, 1, 1.5, 1; "simple subtraction with exponent 1")]
-    #[test_case(1.0, 2, 0.1, 1, 1.01, 2; "subtracting values with different exponents")]
-    fn test_standardform_sub(
-        m1: f64,
-        e1: i8,
-        m2: f64,
-        e2: i8,
-        expected_mantissa: f64,
-        expected_exponent: i8,
-    ) {
-        let sf1 = StandardForm::new(m1.into(), e1);
-        let sf2 = StandardForm::new(m2.into(), e2);
-        let result = sf1 - sf2;
-        assert_standardform_eq(&result, expected_mantissa, expected_exponent);
+    #[test_case("3.0e2", "2.0e2", "1.00e+2"; "subtraction_simple")]
+    #[test_case("5.0e3", "2.0e3", "3.00e+3"; "subtraction_large_numbers")]
+    #[test_case("2.0e-2", "1.0e-2", "1.00e-2"; "subtraction_small_numbers")]
+    #[test_case("1.0e6", "1.0e5", "9.00e+5"; "subtraction_large_difference")]
+    #[test_case("7.0e2", "3.0e2", "4.00e+2"; "subtraction_with_carry")]
+    #[test_case("1.23e2", "-2.46e2", "3.69e+2"; "subtraction_negative_term")]
+    #[test_case("5.0e-3", "1.0e-3", "4.00e-3"; "subtraction_small_difference")]
+    #[test_case("1.0e2", "9.0e1", "1.00e+1"; "subtraction_near_equal")]
+    #[test_case("-1.0e3", "-1.0e2", "-9.00e+2"; "subtraction_negative_numbers")]
+    #[test_case("1.0e1", "5.0e0", "5.00e+0"; "subtraction_half_value")]
+    fn sub_standardform(lhs: &str, rhs: &str, expected_in_science_notation: &str) {
+        let lhs = StandardForm::try_from(lhs).expect(FALIURE_MSG);
+        let rhs = StandardForm::try_from(rhs).expect(FALIURE_MSG);
+
+        assert_eq!(
+            (lhs - rhs).to_scientific_notation(),
+            StandardForm::try_from(expected_in_science_notation)
+                .expect(FALIURE_MSG)
+                .to_scientific_notation()
+        )
     }
 
-    // Test cases for multiplication
-    #[test_case(2.0, 1, 3.0, 1, 6.0, 2; "simple multiplication with same exponent")]
-    #[test_case(1.5, 1, 2.0, 0, 3.0, 1; "multiplication with different exponents")]
-    fn test_standardform_mul(
-        m1: f64,
-        e1: i8,
-        m2: f64,
-        e2: i8,
-        expected_mantissa: f64,
-        expected_exponent: i8,
-    ) {
-        let sf1 = StandardForm::new(m1.into(), e1);
-        let sf2 = StandardForm::new(m2.into(), e2);
-        let result = sf1 * sf2;
-        assert_standardform_eq(&result, expected_mantissa, expected_exponent);
+    #[test_case("1.0e2", "2.0e2", "5.00e-1"; "division_simple")]
+    #[test_case("5.0e3", "2.0e3", "2.50e+0"; "division_large_numbers")]
+    #[test_case("2.0e-2", "1.0e-2", "2.00e+0"; "division_small_numbers")]
+    #[test_case("1.0e6", "1.0e3", "1.00e+3"; "division_large_by_large")]
+    #[test_case("9.0e2", "3.0e2", "3.00e+0"; "division_exact_division")]
+    #[test_case("7.0e5", "1.0e3", "7.00e+2"; "division_no_rounding")]
+    #[test_case("8.0e-4", "2.0e-2", "4.00e-2"; "division_small_by_small")]
+    #[test_case("5.0e2", "5.0e1", "1.00e+1"; "division_by_tenth")]
+    #[test_case("1.0e1", "2.0e1", "5.00e-1"; "division_half")]
+    #[test_case("1.0e-1", "5.0e-1", "2.00e-1"; "division_small_numbers_with_remainder")]
+    fn div_standardform(lhs: &str, rhs: &str, expected_in_science_notation: &str) {
+        let lhs = StandardForm::try_from(lhs).expect(FALIURE_MSG);
+        let rhs = StandardForm::try_from(rhs).expect(FALIURE_MSG);
+
+        assert_eq!(
+            (lhs / rhs).to_scientific_notation(),
+            StandardForm::try_from(expected_in_science_notation)
+                .expect(FALIURE_MSG)
+                .to_scientific_notation()
+        )
     }
 
-    // Test cases for division
-    #[test_case(6.0, 2, 3.0, 1, 2.0, 1; "simple division with same exponent")]
-    #[test_case(4.0, 2, 2.0, 0, 2.0, 2; "division with different exponents")]
-    fn test_standardform_div(
-        m1: f64,
-        e1: i8,
-        m2: f64,
-        e2: i8,
-        expected_mantissa: f64,
-        expected_exponent: i8,
-    ) {
-        let sf1 = StandardForm::new(m1.into(), e1);
-        let sf2 = StandardForm::new(m2.into(), e2);
-        let result = sf1 / sf2;
-        assert_standardform_eq(&result, expected_mantissa, expected_exponent);
+    #[test_case("1.0e2", "2.0e2", "2.00e+4"; "multiplication_simple")]
+    #[test_case("5.0e3", "2.0e3", "1.00e+7"; "multiplication_large_numbers")]
+    #[test_case("2.0e-2", "1.0e-2", "2.00e-4"; "multiplication_small_numbers")]
+    #[test_case("1.0e6", "1.0e-3", "1.00e+3"; "multiplication_large_by_small")]
+    #[test_case("9.0e2", "3.0e2", "2.70e+5"; "multiplication_no_rounding")]
+    #[test_case("7.0e5", "1.0e3", "7.00e+8"; "multiplication_large_by_large")]
+    #[test_case("8.0e-4", "2.0e-2", "1.60e-5"; "multiplication_small_by_small")]
+    #[test_case("5.0e2", "5.0e1", "2.50e+4"; "multiplication_by_tenth")]
+    #[test_case("1.0e1", "2.0e1", "2.00e+2"; "multiplication_basic")]
+    #[test_case("1.0e-1", "5.0e-1", "5.00e-2"; "multiplication_small_numbers2")]
+    fn mul_standardform(lhs: &str, rhs: &str, expected_in_science_notation: &str) {
+        let lhs = StandardForm::try_from(lhs).expect(FALIURE_MSG);
+        let rhs = StandardForm::try_from(rhs).expect(FALIURE_MSG);
+
+        assert_eq!(
+            (lhs * rhs).to_scientific_notation(),
+            StandardForm::try_from(expected_in_science_notation)
+                .expect(FALIURE_MSG)
+                .to_scientific_notation()
+        )
     }
 
-    // Test cases for remainder (modulus)
-    #[test_case(7.0, 1, 3.0, 1, 1.0, 1; "simple modulus with same exponent")]
-    #[test_case(10.0, 2, 3.0, 1, 1.0, 2; "modulus with different exponents")]
-    fn test_standardform_rem(
-        m1: f64,
-        e1: i8,
-        m2: f64,
-        e2: i8,
-        expected_mantissa: f64,
-        expected_exponent: i8,
-    ) {
-        let sf1 = StandardForm::new(m1.into(), e1);
-        let sf2 = StandardForm::new(m2.into(), e2);
-        let result = sf1 % sf2;
-        assert_standardform_eq(&result, expected_mantissa, expected_exponent);
+    // TODO - Ensure these tests pass
+    #[test_case("5.0e2", "1.0e2", "0.00e+0"; "remainder_simple_whole")]
+    #[test_case("5.5e2", "1.0e2", "5.00e+1"; "remainder_simple_fraction")]
+    #[test_case("1.0e5", "3.0e4", "1.00e+4"; "remainder_large_numbers")]
+    #[test_case("1.0e2", "3.0e1", "1.00e+1"; "remainder_large_by_smaller")]
+    #[test_case("7.0e5", "4.0e5", "3.00e+5"; "remainder_no_rounding")]
+    #[test_case("1.2e-1", "5.0e-2", "2.00e-2"; "remainder_small_numbers")]
+    #[test_case("9.9e1", "2.0e1", "1.90e+1"; "remainder_with_fraction")]
+    #[test_case("5.0e3", "1.5e3", "5.00e+2"; "remainder_fraction_result")]
+    #[test_case("4.5e4", "1.0e4", "5.00e+3"; "remainder_exact_half")]
+    #[test_case("2.3e-1", "1.1e-1", "1.00e-2"; "remainder_small_fraction")]
+    fn rem_standardform(lhs: &str, rhs: &str, expected_in_science_notation: &str) {
+        let lhs = StandardForm::try_from(lhs).expect(FALIURE_MSG);
+        let rhs = StandardForm::try_from(rhs).expect(FALIURE_MSG);
+
+        assert_eq!(
+            (lhs % rhs).to_scientific_notation(),
+            StandardForm::try_from(expected_in_science_notation)
+                .expect(FALIURE_MSG)
+                .to_scientific_notation()
+        )
     }
 }
