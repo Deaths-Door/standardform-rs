@@ -48,17 +48,15 @@ Then
 ```rust
 use standardform::StandardForm;
 
-fn main() {
-    // Create a new StandardForm instance
-    let number = StandardForm::new(2.0, 19);
+// Create a new StandardForm instance
+let number = StandardForm::new(2.0, 19);
 
-    // Perform arithmetic operations
-    let result = number * StandardForm::new(1.5, -3);
+// Perform arithmetic operations
+let result = number * StandardForm::new(1.5, -3);
 
-    // Compare numbers
-    if result > StandardForm::new(1.0, 10) {
-        println!("Result is greater than 1*10^108.");
-    }
+// Compare numbers
+if result > StandardForm::new(1.0, 10) {
+    println!("Result is greater than 1*10^108.");
 }
 ```
 

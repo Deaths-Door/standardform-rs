@@ -1,33 +1,41 @@
 #![doc = include_str!("../README.md")]
-#![forbid(
+#![deny(
     missing_docs,
     missing_debug_implementations,
-    unsafe_code,
     unused_mut,
     unused_allocation,
     unused_must_use,
     unreachable_patterns,
     unstable_features,
-    unsafe_op_in_unsafe_fn,
     trivial_casts,
     overflowing_literals,
-    non_snake_case,
     clippy::cargo,
     clippy::perf,
     clippy::complexity,
     clippy::style,
     clippy::suspicious
 )]
+#![cfg_attr(
+    not(feature = "python"),
+    forbid(non_snake_case, unsafe_op_in_unsafe_fn, unsafe_code)
+)]
+#![cfg_attr(
+    feature = "python",
+    allow(non_snake_case, unsafe_op_in_unsafe_fn, unsafe_code)
+)]
 
-#[cfg(feature = "nom")]
+#[cfg(all(feature = "nom", not(feature = "_bindings")))]
 mod nom;
 
-#[cfg(feature = "nom")]
+#[cfg(all(feature = "nom", not(feature = "_bindings")))]
 pub use nom::*;
 
+#[cfg(feature = "python")]
+mod python;
+
+use core::f64;
 use core::num::{ParseFloatError, ParseIntError};
 use core::str::Utf8Error;
-use core::{f64, i8};
 
 use decorum::Finite;
 use num_traits::real::Real;
@@ -39,6 +47,7 @@ use thiserror::Error;
 ///
 /// The `Standardform` struct holds the significand (mantissa) of the number
 /// and an exponent that determines the power of 10 by which the significand should be multiplied.
+#[cfg_attr(feature = "python", pyo3::prelude::pyclass)]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StandardForm {
     mantissa: Finite<f64>,
@@ -64,6 +73,11 @@ impl StandardForm {
         instance
     }
 
+    /// Returns the 'real' value of the struct
+    pub fn as_finite(self) -> Finite<f64> {
+        self.mantissa * 10f64.powi(self.exponent.into())
+    }
+
     pub(crate) const fn new_unchecked(mantissa: Finite<f64>, exponent: i8) -> Self {
         Self { mantissa, exponent }
     }
@@ -75,7 +89,12 @@ impl StandardForm {
         let abs = self.mantissa.abs();
 
         // 1.0 <= abs is same as abs >= 1.0
-        abs >= 1.0 && abs < 10.0
+        // aka
+
+        #[allow(clippy::manual_range_contains)]
+        {
+            abs >= 1.0 && abs < 10.0
+        }
     }
 
     fn adjust(&mut self) {
@@ -106,11 +125,6 @@ impl StandardForm {
             }
         }
     }
-
-    /// Returns the 'real' value of the struct
-    pub fn as_finite(self) -> Finite<f64> {
-        self.mantissa * 10f64.powi(self.exponent.into())
-    }
 }
 
 impl Default for StandardForm {
@@ -126,11 +140,7 @@ impl core::fmt::Display for StandardForm {
             return write!(f, "{}", self.to_scientific_notation());
         };
 
-        write!(
-            f,
-            "{}",
-            self.mantissa * 10_f64.powi(self.exponent as i32) as f64
-        )
+        write!(f, "{}", self.mantissa * 10_f64.powi(self.exponent as i32))
     }
 }
 
@@ -212,7 +222,7 @@ pub enum ParsingStandardFormError {
     #[error("Invalid radix : Only radix 10 is supported")]
     InvalidRadix,
 
-    ///
+    /// Constraints Voliated for constructing the given f64
     #[error("{0}")]
     ConstraintsVoliated(#[from] ConversionError),
 }
@@ -258,8 +268,8 @@ impl core::ops::Sub for StandardForm {
     fn sub(self, other: Self) -> Self {
         let min = self.exponent.min(other.exponent);
 
-        let x = self.mantissa * 10_f64.powi((self.exponent - min) as i32) as f64;
-        let y = other.mantissa * 10_f64.powi((other.exponent - min) as i32) as f64;
+        let x = self.mantissa * 10_f64.powi((self.exponent - min) as i32);
+        let y = other.mantissa * 10_f64.powi((other.exponent - min) as i32);
 
         let result = x - y;
 
@@ -458,13 +468,13 @@ impl From<Finite<f64>> for StandardForm {
 }
 
 #[derive(Debug, Clone, thiserror::Error, PartialEq, Eq)]
-///
+/// ConversionError
 pub enum ConversionError {
-    ///
+    /// Constraint of Finite<f64> is voliated by NaN
     #[error("Constraint of Finite<f64> is voliated by NaN")]
     NaN,
 
-    ///
+    /// Constraint of Finite<f64> is voliated by Infinity
     #[error("Constraint of Finite<f64> is voliated by Infinity")]
     Infinity,
 }
