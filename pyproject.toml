@@ -1,7 +1,27 @@
+[project]
+name = "standardform"
+version = "0.2.1"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+keywords = ["ffi","no-std","science","mathematics"]
+description = "Effortlessly operate on numbers like 2e19 or 2*10^4 and more with this Rust implementation of standard form. Simplify, convert, and manipulate large numerical expressions with ease."
+authors = [
+    { name = "Aarav Shah" , email = "aaravaditya51@gmail.com" }
+]
+maintainers =  [
+    { name = "Aarav Shah" , email = "aaravaditya51@gmail.com" }
+]
+
+[project.urls]
+Documentation = "https://docs.rs/standardform"
+Repository = "https://github.com/Deaths-Door/standardform-rs"
+Homepage = "https://github.com/Deaths-Door/standardform-rs"
+Issues = "https://github.com/Deaths-Door/standardform-rs/issues"
+
 [build-system]
 requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [tool.maturin]
 # "extension-module" tells pyo3 we want to build an extension module (skips linking against libpython.so)
-features = ["pyo3/extension-module"]
+features = ["pyo3/extension-module"] 

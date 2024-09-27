@@ -1,12 +1,20 @@
 use super::*;
 
-use pyo3::exceptions::PyValueError;
+use pyo3::exceptions::{PyValueError,PyException};
 use pyo3::prelude::*;
 
 #[cfg_attr(feature = "python", pymodule)]
 fn standardform(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<StandardForm>()?;
     Ok(())
+}
+
+pyo3::create_exception!("standardform",PyConversionError,PyException,"A wrapper around the rust ConversionError enum");
+
+impl PyConversionError {
+    fn from(value : ConversionError) -> PyErr {
+        Self::new_err(value.to_string())
+    }
 }
 
 #[cfg(feature = "python")]
@@ -28,17 +36,24 @@ impl StandardForm {
     // This is a 'replacement' for the Defatul trait
     #[pyo3(signature = (mantissa=1.0,exponent=0))]
     pub fn new_py(mantissa: f64, exponent: i8) -> PyResult<Self> {
-        // Check for NaN
-        if value.is_nan() {
-            return Err(ConversionError::NaN);
-        }
+        fn is_valid(float: f64) -> Option<ConversionError> {
+            // Check for NaN
+            if float.is_nan() {
+                return Some(ConversionError::NaN);
+            }
 
-        // Check for Infinity
-        if value.is_infinite() {
-            return Err(ConversionError::Infinity);
-        }
+            // Check for Infinity
+            if float.is_infinite() {
+                return Some(ConversionError::Infinity);
+            }
 
-        Ok(Self::new(Finite::from_inner(mantissa), exponent))
+            None
+        } 
+
+        match is_valid(mantissa) {
+            Some(error) => Err(PyConversionError::from(error)),
+            None => Ok(Self::new(Finite::from_inner(mantissa), exponent))
+        }
     }
 
     fn __hash__(&self) -> u64 {
