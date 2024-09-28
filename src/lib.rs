@@ -33,7 +33,7 @@ pub use nom::*;
 #[cfg(feature = "python")]
 mod python;
 
-#[cfg(feature="wasm")]
+#[cfg(feature = "wasm")]
 mod wasm;
 
 use core::f64;
@@ -51,7 +51,7 @@ use thiserror::Error;
 /// The `Standardform` struct holds the significand (mantissa) of the number
 /// and an exponent that determines the power of 10 by which the significand should be multiplied.
 #[cfg_attr(feature = "python", pyo3::prelude::pyclass)]
-#[cfg_attr(feature="wasm", wasm_bindgen::prelude::wasm_bindgen)]
+#[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StandardForm {
     mantissa: Finite<f64>,
@@ -162,12 +162,12 @@ impl StandardForm {
     }
 }
 
-#[cfg_attr(feature="wasm", wasm_bindgen::prelude::wasm_bindgen)]
+#[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
 impl StandardForm {
     /// Returns the string representation of the number in scientific notation.
     #[must_use]
     #[cfg(feature = "std")]
-    #[cfg_attr(feature="wasm", wasm_bindgen::prelude::wasm_bindgen)]
+    #[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
     pub fn to_scientific_notation(&self) -> String {
         format!("{}e{}", self.mantissa, self.exponent)
     }
@@ -175,7 +175,7 @@ impl StandardForm {
     /// Returns the string representation of the number in engineering notation.
     #[must_use]
     #[cfg(feature = "std")]
-    #[cfg_attr(feature="wasm", wasm_bindgen::prelude::wasm_bindgen)]
+    #[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
     pub fn to_engineering_notation(&self) -> String {
         format!("{}*10^{}", self.mantissa, self.exponent)
     }
@@ -472,7 +472,7 @@ impl From<Finite<f64>> for StandardForm {
     }
 }
 
-#[cfg_attr(feature="wasm", wasm_bindgen::prelude::wasm_bindgen)]
+#[cfg_attr(feature = "wasm", wasm_bindgen::prelude::wasm_bindgen)]
 #[derive(Debug, Clone, thiserror::Error, PartialEq, Eq)]
 /// ConversionError
 pub enum ConversionError {

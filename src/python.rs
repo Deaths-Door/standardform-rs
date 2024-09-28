@@ -1,8 +1,8 @@
 use super::*;
 
+use num_traits::*;
 use pyo3::exceptions::{PyException, PyValueError};
 use pyo3::prelude::*;
-use num_traits::*;
 
 #[allow(dead_code)]
 fn standardform(m: &Bound<'_, PyModule>) -> PyResult<()> {
