@@ -23,6 +23,7 @@ impl PyConversionError {
     }
 }
 
+#[allow(clippy::needless_lifetimes)]
 #[pymethods]
 impl StandardForm {
     /// Creates a new instance of `StandardForm` with the given mantissa and exponent.
@@ -219,9 +220,10 @@ impl StandardForm {
     }
 }
 
+#[allow(clippy::needless_lifetimes)]
 fn try_all_valid_types<'py>(rhs: &Bound<'py, PyAny>) -> PyResult<StandardForm> {
     let output: StandardForm = if let Ok(rhs) = rhs.extract::<StandardForm>() {
-        rhs.into()
+        rhs
     } else if let Ok(rhs) = rhs.extract::<i64>() {
         rhs.into()
     } else if let Ok(rhs) = rhs.extract::<i64>() {
