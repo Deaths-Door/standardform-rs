@@ -33,3 +33,8 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: "--all --release --all-features"
           strip: true
+      if: matrix.platform.release_for == "Wasm"
+      - name: Generate Wasm 
+        run: cargo install wasm-pack && wasm-pack build --target web --out-dir ./website/pkg
+      
+

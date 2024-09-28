@@ -33,6 +33,9 @@ pub use nom::*;
 #[cfg(feature = "python")]
 mod python;
 
+#[cfg(feature="wasm")]
+mod wasm;
+
 use core::f64;
 use core::num::{ParseFloatError, ParseIntError};
 use core::str::Utf8Error;
@@ -48,6 +51,7 @@ use thiserror::Error;
 /// The `Standardform` struct holds the significand (mantissa) of the number
 /// and an exponent that determines the power of 10 by which the significand should be multiplied.
 #[cfg_attr(feature = "python", pyo3::prelude::pyclass)]
+#[cfg_attr(feature="wasm", wasm_bindgen::prelude::wasm_bindgen)]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StandardForm {
     mantissa: Finite<f64>,
@@ -147,23 +151,23 @@ impl core::fmt::Display for StandardForm {
 impl StandardForm {
     /// Returns a reference to the StandardForm representing the significand (mantissa) of the number.
     #[must_use]
-    #[cfg(feature = "std")]
     pub const fn mantissa(&self) -> &Finite<f64> {
         &self.mantissa
     }
 
     /// Returns the exponent that determines the power of 10 by which the significand should be multiplied.
     #[must_use]
-    #[cfg(feature = "std")]
     pub const fn exponent(&self) -> &i8 {
         &self.exponent
     }
 }
 
+#[cfg_attr(feature="wasm", wasm_bindgen::prelude::wasm_bindgen)]
 impl StandardForm {
     /// Returns the string representation of the number in scientific notation.
     #[must_use]
     #[cfg(feature = "std")]
+    #[cfg_attr(feature="wasm", wasm_bindgen::prelude::wasm_bindgen)]
     pub fn to_scientific_notation(&self) -> String {
         format!("{}e{}", self.mantissa, self.exponent)
     }
@@ -171,6 +175,7 @@ impl StandardForm {
     /// Returns the string representation of the number in engineering notation.
     #[must_use]
     #[cfg(feature = "std")]
+    #[cfg_attr(feature="wasm", wasm_bindgen::prelude::wasm_bindgen)]
     pub fn to_engineering_notation(&self) -> String {
         format!("{}*10^{}", self.mantissa, self.exponent)
     }
@@ -467,6 +472,7 @@ impl From<Finite<f64>> for StandardForm {
     }
 }
 
+#[cfg_attr(feature="wasm", wasm_bindgen::prelude::wasm_bindgen)]
 #[derive(Debug, Clone, thiserror::Error, PartialEq, Eq)]
 /// ConversionError
 pub enum ConversionError {
@@ -556,6 +562,7 @@ trig_functions!(
 );
 */
 
+// TODO: Add this to te python API once this is done - https://github.com/PyO3/pyo3/issues/1190
 impl num_traits::Zero for StandardForm {
     fn zero() -> Self {
         Self::new_unchecked(Finite::zero(), num_traits::Zero::zero())

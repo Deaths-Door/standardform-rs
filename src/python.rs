@@ -1,23 +1,28 @@
 use super::*;
 
-use pyo3::exceptions::{PyValueError,PyException};
+use pyo3::exceptions::{PyException, PyValueError};
 use pyo3::prelude::*;
+use num_traits::*;
 
-#[cfg_attr(feature = "python", pymodule)]
+#[allow(dead_code)]
 fn standardform(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<StandardForm>()?;
     Ok(())
 }
 
-pyo3::create_exception!("standardform",PyConversionError,PyException,"A wrapper around the rust ConversionError enum");
+pyo3::create_exception!(
+    "standardform",
+    PyConversionError,
+    PyException,
+    "A wrapper around the rust ConversionError enum"
+);
 
 impl PyConversionError {
-    fn from(value : ConversionError) -> PyErr {
+    fn from(value: ConversionError) -> PyErr {
         Self::new_err(value.to_string())
     }
 }
 
-#[cfg(feature = "python")]
 #[pymethods]
 impl StandardForm {
     /// Creates a new instance of `StandardForm` with the given mantissa and exponent.
@@ -48,12 +53,24 @@ impl StandardForm {
             }
 
             None
-        } 
+        }
 
         match is_valid(mantissa) {
             Some(error) => Err(PyConversionError::from(error)),
-            None => Ok(Self::new(Finite::from_inner(mantissa), exponent))
+            None => Ok(Self::new(Finite::from_inner(mantissa), exponent)),
         }
+    }
+
+    #[pyo3(name = "to_scientific_notation")]
+    fn to_scientific_notation_py(&self) -> String {
+        format!("{}e{}", self.mantissa, self.exponent)
+    }
+
+    /// Returns the string representation of the number in engineering notation.
+    #[must_use]
+    #[pyo3(name = "to_engineering_notation")]
+    fn to_engineering_notation_py(&self) -> String {
+        format!("{}*10^{}", self.mantissa, self.exponent)
     }
 
     fn __hash__(&self) -> u64 {
@@ -151,6 +168,54 @@ impl StandardForm {
     }
     fn __rdiv__<'py>(&self, rhs: &Bound<'py, PyAny>) -> PyResult<Self> {
         Ok(self.clone() / try_all_valid_types(rhs)?)
+    }
+
+    #[staticmethod]
+    #[pyo3(name = "max_value")]
+    fn max_value_py() -> Self {
+        Self::max_value()
+    }
+
+    #[staticmethod]
+    #[pyo3(name = "min_value")]
+    fn min_value_py() -> Self {
+        Self::min_value()
+    }
+    #[pyo3(name = "is_negative")]
+    fn is_negative_py(&self) -> bool {
+        self.is_negative()
+    }
+    #[pyo3(name = "is_positive")]
+    fn is_positive_py(&self) -> bool {
+        self.is_positive()
+    }
+    #[pyo3(name = "signum")]
+    fn signum_py(&self) -> Self {
+        self.signum()
+    }
+    #[pyo3(name = "abs_sub")]
+    fn abs_sub_py(&self, other: &Self) -> Self {
+        self.abs_sub(other)
+    }
+    #[pyo3(name = "abs")]
+    fn abs_py(&self) -> Self {
+        self.abs()
+    }
+
+    #[staticmethod]
+    #[pyo3(name = "one")]
+    fn one_py() -> Self {
+        Self::one()
+    }
+    #[pyo3(name = "is_zero")]
+    fn is_zero_py(&self) -> bool {
+        self.is_zero()
+    }
+
+    #[staticmethod]
+    #[pyo3(name = "zero")]
+    fn zero_py() -> Self {
+        Self::zero()
     }
 }
 
