@@ -1,0 +1,40 @@
+on: push
+
+jobs:
+  release:
+    name: Release and Test - ${{ matrix.platform.release_for }}
+    strategy:
+      matrix:
+        platform:
+          - release_for: Lunux-Musl-x86_64
+            os: ubuntu-lastest
+            target: x86_64-unknown-linux-musl
+
+          - release_for: Windows-x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+
+          - release_for: macOS-x86_64
+            os: macOS-latest
+            target: x86_64-apple-darwin
+
+          - release_for: Wasm
+            os: ubuntu-lastest
+            target: wasm32-unknown-unknown
+
+    runs-on: ${{ matrix.platform.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: both
+          target: ${{ matrix.platform.target }}
+          args: "--all --release --all-features"
+          strip: true
+      if: matrix.platform.release_for == "Wasm"
+      - name: Generate Wasm 
+        run: cargo install wasm-pack && wasm-pack build --target web --out-dir ./website/pkg
+      
+
