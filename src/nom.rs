@@ -6,7 +6,9 @@ use nom::{
     error::ParseError,
     number::complete::double,
     sequence::{pair, preceded},
-    IResult,
+    IResult, 
+    error::ParseError,
+    bytes::complete::tag, number::complete::double,
 };
 
 use crate::StandardForm;
@@ -23,15 +25,12 @@ use crate::StandardForm;
 /// # Returns
 ///
 /// Returns a `Result` containing the parsed `StandardForm` struct if successful, or a parsing error.
-pub fn parse_standard_form_with_required_exponent<'a, E>(
-    input: &'a str,
-) -> IResult<&str, StandardForm, E>
-where
-    E: ParseError<&'a str>,
-{
-    map(pair(double, parse_exponent), |(mantissa, exponent)| {
-        StandardForm::new(Finite::from_inner(mantissa), exponent)
-    })(input)
+pub fn parse_standard_form_with_required_exponent<'a,E>(input: &'a str) -> IResult<&str, StandardForm,E>   where
+E: ParseError<&'a str>, {    
+    map(
+        pair(double,parse_exponent),
+        |(mantissa , exponent)| StandardForm::new(mantissa,exponent) 
+    )(input)
 }
 
 /// Parses a string in standard form (scientific notation) and returns a `StandardForm` struct.
@@ -45,24 +44,16 @@ where
 /// # Returns
 ///
 /// Returns a `Result` containing the parsed `StandardForm` struct if successful, or a parsing error.
-pub fn parse_standard_form_with_optional_exponent<'a, E>(
-    input: &'a str,
-) -> IResult<&str, StandardForm, E>
-where
-    E: ParseError<&'a str>,
-{
+pub fn parse_standard_form_with_optional_exponent<'a,E>(input: &'a str) -> IResult<&str, StandardForm,E>    where
+E: ParseError<&'a str>,{
     map(
-        pair(double, opt(parse_exponent::<E>)),
-        |(mantissa, exponent)| {
-            StandardForm::new(Finite::from_inner(mantissa), exponent.unwrap_or(0))
-        },
+        pair(double,opt(parse_exponent::<E>)),
+        |(mantissa , exponent)| StandardForm::new(mantissa,exponent.unwrap_or(0)) 
     )(input)
 }
 
-fn parse_exponent<'a, E>(input: &'a str) -> IResult<&str, i8, E>
-where
-    E: ParseError<&'a str>,
-{
+fn parse_exponent<'a,E>(input: &'a str) -> IResult<&str,i8,E>   where
+        E: ParseError<&'a str>, {
     preceded(
         alt((tag("e"), tag("E"), tag("*10^"))),
         map(double, |exp: f64| exp as i8),
